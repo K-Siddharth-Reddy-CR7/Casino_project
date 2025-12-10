@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BankDetails } from '../types';
 import { CreditCard, Landmark, ArrowDownCircle, ArrowUpCircle, History, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 interface BankingProps {
   balance: number;
@@ -9,7 +10,28 @@ interface BankingProps {
 }
 
 export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onRequestTransaction }) => {
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdrawal'>('deposit');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Initialize from URL or default to deposit
+  const [activeTab, setActiveTab] = useState<'deposit' | 'withdrawal'>(
+      searchParams.get('tab') === 'withdrawal' ? 'withdrawal' : 'deposit'
+  );
+
+  // Sync state if URL changes (e.g. navigation from dashboard)
+  useEffect(() => {
+      const tab = searchParams.get('tab');
+      if (tab === 'withdrawal' || tab === 'deposit') {
+          setActiveTab(tab);
+      }
+  }, [searchParams]);
+
+  // Update URL when switching tabs manually
+  const handleTabSwitch = (tab: 'deposit' | 'withdrawal') => {
+      setActiveTab(tab);
+      setSearchParams({ tab });
+      setMessage(null);
+  };
+
   const [amount, setAmount] = useState('');
   const [txRef, setTxRef] = useState(''); // For Deposits
   
@@ -93,7 +115,7 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
            {/* Sidebar / Tabs */}
            <div className="w-full md:w-1/3 bg-slate-50 dark:bg-navy-950 p-6 flex flex-col gap-2 border-r border-slate-200 dark:border-white/5">
                <button 
-                  onClick={() => { setActiveTab('deposit'); setMessage(null); }}
+                  onClick={() => handleTabSwitch('deposit')}
                   className={`flex items-center gap-3 p-4 rounded-xl font-bold transition-all ${
                       activeTab === 'deposit' 
                       ? 'bg-lavender-500 text-white shadow-lg shadow-lavender-500/30' 
@@ -108,7 +130,7 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
                </button>
 
                <button 
-                  onClick={() => { setActiveTab('withdrawal'); setMessage(null); }}
+                  onClick={() => handleTabSwitch('withdrawal')}
                   className={`flex items-center gap-3 p-4 rounded-xl font-bold transition-all ${
                       activeTab === 'withdrawal' 
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' 
