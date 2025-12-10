@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ADMIN_SECRET_KEY } from '../constants';
-import { PlayerStats, UserProfile, Transaction } from '../types';
-import { Shield, Lock, Database, Search, User, CreditCard, Activity, X, Eye } from 'lucide-react';
+import { PlayerStats, UserProfile } from '../types';
+import { Shield, Lock, Database, Search, User, CreditCard, Activity, X, Eye, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface DatabaseRecord {
   profile: UserProfile;
@@ -87,6 +88,13 @@ export const AdminPanel: React.FC = () => {
                 Authenticate
               </button>
             </form>
+
+            <Link 
+                to="/" 
+                className="mt-6 flex items-center gap-2 text-slate-500 hover:text-red-400 text-sm transition-colors font-mono"
+            >
+                <ArrowLeft size={16} /> Return to Casino
+            </Link>
           </div>
         </div>
       </div>
@@ -108,12 +116,21 @@ export const AdminPanel: React.FC = () => {
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-mono uppercase">Database Management Console</p>
              </div>
           </div>
-          <button 
-            onClick={() => setIsAuthenticated(false)}
-            className="px-4 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors text-sm font-bold uppercase tracking-wider"
-          >
-            End Session
-          </button>
+          
+          <div className="flex items-center gap-4">
+              <Link 
+                to="/" 
+                className="px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold text-sm flex items-center gap-2 transition-colors"
+              >
+                  <ArrowLeft size={16} /> Back to Dashboard
+              </Link>
+              <button 
+                onClick={() => setIsAuthenticated(false)}
+                className="px-4 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors text-sm font-bold uppercase tracking-wider"
+              >
+                End Session
+              </button>
+          </div>
         </div>
 
         {/* Stats Cards */}

@@ -11,7 +11,7 @@ import { PitBossChat } from './components/PitBossChat';
 import { Statement } from './components/Statement';
 import { AdminPanel } from './components/AdminPanel';
 import { Auth } from './components/Auth';
-import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, Lock } from 'lucide-react';
+import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, Lock, ArrowLeft } from 'lucide-react';
 
 const STORAGE_KEY_USERS = 'neon_vegas_users';
 const STORAGE_KEY_SESSION = 'neon_vegas_session';
@@ -37,6 +37,21 @@ const NavLink: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
         </Link>
     );
 }
+
+const BackButton = () => {
+    const location = useLocation();
+    if (location.pathname === '/' || location.pathname === '/admin') return null;
+    
+    return (
+        <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 text-slate-500 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 mb-6 transition-colors font-medium animate-in slide-in-from-left-2"
+        >
+            <ArrowLeft size={20} />
+            Back to Dashboard
+        </Link>
+    );
+};
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -278,10 +293,6 @@ const App: React.FC = () => {
       }
   };
 
-  // Allow Auth component to render if not authenticated, BUT if the path is /admin, we might want to show AdminPanel directly even if logged out of game user
-  // However, AdminPanel has its own internal auth. 
-  // Simple router logic: If path is admin, render admin. Else if not authenticated, render Auth.
-
   return (
     <HashRouter>
       <div className={`min-h-screen font-sans selection:bg-lavender-400 selection:text-black transition-colors duration-300 ${isDarkMode ? 'dark bg-[#020617] text-gray-100' : 'bg-slate-50 text-slate-900'}`}>
@@ -352,7 +363,9 @@ const App: React.FC = () => {
                         {/* Main Content Area */}
                         <main className="md:ml-64 min-h-screen p-4 md:p-8 pt-6 bg-slate-50 dark:bg-[#020617] relative transition-colors duration-300">
                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+                            
                             <div className="max-w-7xl mx-auto relative z-10">
+                                <BackButton />
                                 <Routes>
                                     <Route path="/" element={
                                         <Dashboard 

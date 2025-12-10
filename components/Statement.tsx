@@ -7,7 +7,7 @@ interface StatementProps {
   history: Transaction[];
 }
 
-type FilterType = 'all' | 'win' | 'loss' | 'banking';
+type FilterType = 'all' | 'win' | 'loss' | 'banking' | 'blackjack' | 'slots' | 'dice' | 'highlow';
 
 export const Statement: React.FC<StatementProps> = ({ history }) => {
   const [filter, setFilter] = useState<FilterType>('all');
@@ -17,9 +17,19 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
   // Derived Stats
   const reversedHistory = [...history].reverse();
   const filteredHistory = reversedHistory.filter(tx => {
+    const desc = tx.description.toLowerCase();
+    
     if (filter === 'all') return true;
     if (filter === 'banking') return tx.type === 'deposit' || tx.type === 'withdrawal';
-    return tx.type === filter;
+    if (filter === 'win' || filter === 'loss') return tx.type === filter;
+    
+    // Game Filters
+    if (filter === 'blackjack') return desc.includes('blackjack');
+    if (filter === 'slots') return desc.includes('slots');
+    if (filter === 'dice') return desc.includes('dice');
+    if (filter === 'highlow') return desc.includes('highlow') || desc.includes('high-low');
+    
+    return true;
   });
 
   const totalWins = history.filter(tx => tx.type === 'win').length;
@@ -167,18 +177,18 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
       <div className="bg-white dark:bg-navy-800/30 backdrop-blur-sm border border-slate-200 dark:border-navy-700 rounded-2xl overflow-hidden shadow-xl">
         
         {/* Filter Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-navy-700 overflow-x-auto">
-            {(['all', 'win', 'loss', 'banking'] as const).map((f) => (
+        <div className="flex border-b border-slate-200 dark:border-navy-700 overflow-x-auto scrollbar-hide">
+            {(['all', 'win', 'loss', 'banking', 'blackjack', 'slots', 'dice', 'highlow'] as const).map((f) => (
                 <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`px-8 py-4 text-sm font-bold uppercase tracking-wider transition-colors ${
+                    className={`px-6 py-4 text-sm font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${
                         filter === f 
                         ? 'bg-slate-100 dark:bg-navy-800 text-slate-900 dark:text-white border-b-2 border-lavender-500' 
                         : 'text-slate-500 dark:text-gray-500 hover:text-slate-700 dark:hover:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5'
                     }`}
                 >
-                    {f === 'banking' ? 'Deposits/Withdrawals' : f + 's'}
+                    {f === 'banking' ? 'Banking' : f === 'highlow' ? 'High-Low' : f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
             ))}
         </div>
