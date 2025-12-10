@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction } from '../types';
-import { ArrowUpRight, ArrowDownLeft, Trophy, MinusCircle, Wallet, BrainCircuit, Filter, PieChart, TrendingUp, Dice5, CircleDollarSign, ArrowUp } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Trophy, MinusCircle, Wallet, BrainCircuit, Filter, PieChart, TrendingUp, Dice5, CircleDollarSign, ArrowUp, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { analyzePlayerHistory } from '../services/geminiService';
 
 interface StatementProps {
@@ -37,6 +37,8 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
   const winRate = totalWins + totalLosses > 0 ? Math.round((totalWins / (totalWins + totalLosses)) * 100) : 0;
   
   const netProfit = history.reduce((acc, tx) => {
+    // Only count approved/completed transactions for profit stats
+    if (tx.status === 'rejected' || tx.status === 'pending') return acc;
     if (tx.type === 'win') return acc + tx.amount;
     if (tx.type === 'loss') return acc + tx.amount; // amount is negative
     return acc;
@@ -80,6 +82,17 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
       if (type === 'win' || type === 'deposit') return 'text-green-600 dark:text-green-400';
       return 'text-slate-800 dark:text-white';
   };
+
+  const getStatusBadge = (status?: string) => {
+      if (!status || status === 'approved') return null;
+      if (status === 'pending') {
+          return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-700"><Clock size={10} /> Pending</span>
+      }
+      if (status === 'rejected') {
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-700"><AlertCircle size={10} /> Rejected</span>
+      }
+      return null;
+  }
 
   const renderGameCard = (title: string, icon: React.ReactNode, stats: { wins: number, losses: number, net: number }) => (
       <div className="bg-white dark:bg-navy-800/30 p-4 rounded-xl border border-slate-200 dark:border-white/5 flex flex-col gap-2 shadow-sm">
@@ -216,16 +229,22 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
                  </tr>
               ) : (
                 filteredHistory.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                    <tr key={tx.id} className={`hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group ${tx.status === 'rejected' ? 'opacity-50 grayscale' : ''}`}>
                         <td className="p-6">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-full bg-slate-100 dark:bg-navy-900 border border-slate-200 dark:border-white/5`}>
                                     {getIcon(tx.type)}
                                 </div>
-                                <span className="capitalize font-bold text-slate-700 dark:text-gray-300 text-sm">{tx.type}</span>
+                                <div className="flex flex-col">
+                                    <span className="capitalize font-bold text-slate-700 dark:text-gray-300 text-sm">{tx.type}</span>
+                                    {getStatusBadge(tx.status)}
+                                </div>
                             </div>
                         </td>
-                        <td className="p-6 text-slate-600 dark:text-gray-300 font-medium">{tx.description}</td>
+                        <td className="p-6 text-slate-600 dark:text-gray-300 font-medium">
+                            {tx.description}
+                            {tx.transactionRef && <span className="block text-[10px] text-gray-400 font-mono">Ref: {tx.transactionRef}</span>}
+                        </td>
                         <td className="p-6 text-slate-400 dark:text-gray-500 text-sm font-mono">{tx.date}</td>
                         <td className={`p-6 text-right font-bold font-mono text-lg ${getAmountColor(tx.type, tx.amount)}`}>
                             {tx.amount > 0 && tx.type !== 'loss' && tx.type !== 'withdrawal' ? '+' : ''}

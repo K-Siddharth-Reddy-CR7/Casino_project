@@ -20,6 +20,15 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface BankDetails {
+  accountHolder: string;
+  bankName: string;
+  accountNumber: string;
+  routingNumber?: string;
+}
+
+export type TransactionStatus = 'pending' | 'approved' | 'rejected';
+
 export interface Transaction {
   id: string;
   type: 'win' | 'loss' | 'deposit' | 'withdrawal' | 'bonus';
@@ -27,12 +36,16 @@ export interface Transaction {
   date: string;
   description: string;
   balanceAfter: number;
+  status?: TransactionStatus;
+  transactionRef?: string; // For deposits (UTR/Ref No)
+  bankDetails?: BankDetails;
 }
 
 export interface UserProfile {
   username: string;
   email: string;
   password?: string; // In real app, this would be hashed. Simulated here.
+  savedBankDetails?: BankDetails;
 }
 
 export interface PlayerStats {

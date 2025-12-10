@@ -11,7 +11,8 @@ import { PitBossChat } from './components/PitBossChat';
 import { Statement } from './components/Statement';
 import { AdminPanel } from './components/AdminPanel';
 import { Auth } from './components/Auth';
-import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, Lock, ArrowLeft } from 'lucide-react';
+import { Banking } from './components/Banking';
+import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, Lock, ArrowLeft, CreditCard } from 'lucide-react';
 
 const STORAGE_KEY_USERS = 'neon_vegas_users';
 const STORAGE_KEY_SESSION = 'neon_vegas_session';
@@ -65,10 +66,6 @@ const App: React.FC = () => {
         history: [],
         user: { username: 'Player', email: '' }
   });
-
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [txAmount, setTxAmount] = useState('');
 
   // --- Theme Logic ---
   useEffect(() => {
@@ -144,6 +141,50 @@ const App: React.FC = () => {
           setIsAuthenticated(true);
       }
   };
+
+  // Sync with DB when window focuses (to catch Admin updates)
+  useEffect(() => {
+      const handleFocus = () => {
+          if (currentUserEmail) {
+              loadUserData(currentUserEmail);
+          }
+      };
+      window.addEventListener('focus', handleFocus);
+      return () => window.removeEventListener('focus', handleFocus);
+  }, [currentUserEmail]);
+
+
+  // Inject Universal User if not exists
+  useEffect(() => {
+      const db = getDB();
+      const universalEmail = 'ksr@gmail.com';
+      
+      if (!db[universalEmail]) {
+          console.log("Injecting Universal Access User...");
+          db[universalEmail] = {
+              profile: {
+                  username: 'sid',
+                  email: universalEmail,
+                  password: 'kkkkkkk1'
+              },
+              stats: {
+                  balance: 5000,
+                  wins: 0,
+                  losses: 0,
+                  history: [{
+                      id: 'genesis',
+                      type: 'deposit',
+                      amount: 5000,
+                      date: new Date().toLocaleString(),
+                      description: 'Universal Access Bonus',
+                      balanceAfter: 5000,
+                      status: 'approved'
+                  }]
+              }
+          };
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(db));
+      }
+  }, []);
 
   // Load Session on Mount
   useEffect(() => {
@@ -238,7 +279,8 @@ const App: React.FC = () => {
             amount: amount,
             date: new Date().toLocaleString(),
             description: `${gameName} ${type === 'win' ? 'Payout' : 'Bet'}`,
-            balanceAfter: newBalance
+            balanceAfter: newBalance,
+            status: 'approved' // Game transactions auto-approved
         };
 
         return {
@@ -251,46 +293,40 @@ const App: React.FC = () => {
     });
   };
 
-  const handleDeposit = (e: React.FormEvent) => {
-      e.preventDefault();
-      const amount = parseFloat(txAmount);
-      if (amount > 0) {
-        setStats(prev => {
-            const newBalance = prev.balance + amount;
-            const newTx: Transaction = {
-                id: Date.now().toString(),
-                type: 'deposit',
-                amount: amount,
-                date: new Date().toLocaleString(),
-                description: 'Deposit Funds',
-                balanceAfter: newBalance
-            };
-            return { ...prev, balance: newBalance, history: [...prev.history, newTx] };
-        });
-        setShowDepositModal(false);
-        setTxAmount('');
-      }
-  };
+  const handleBankingRequest = (type: 'deposit' | 'withdrawal', amount: number, details: any) => {
+      setStats(prev => {
+          let newBalance = prev.balance;
+          
+          if (type === 'withdrawal') {
+              // Deduct from balance immediately (Escrow)
+              newBalance -= amount;
+          }
+          // Deposits do NOT update balance until approved
 
-  const handleWithdraw = (e: React.FormEvent) => {
-      e.preventDefault();
-      const amount = parseFloat(txAmount);
-      if (amount > 0 && amount <= stats.balance) {
-        setStats(prev => {
-            const newBalance = prev.balance - amount;
-            const newTx: Transaction = {
-                id: Date.now().toString(),
-                type: 'withdrawal',
-                amount: -amount,
-                date: new Date().toLocaleString(),
-                description: 'Withdraw Funds',
-                balanceAfter: newBalance
-            };
-            return { ...prev, balance: newBalance, history: [...prev.history, newTx] };
-        });
-        setShowWithdrawModal(false);
-        setTxAmount('');
-      }
+          const newTx: Transaction = {
+              id: Date.now().toString(),
+              type: type,
+              amount: type === 'withdrawal' ? -amount : amount,
+              date: new Date().toLocaleString(),
+              description: type === 'deposit' ? 'Deposit Request' : 'Withdrawal Request',
+              balanceAfter: newBalance, // Snapshot
+              status: 'pending',
+              transactionRef: details.transactionRef,
+              bankDetails: details.bankDetails
+          };
+
+          const updatedUser: UserProfile = {
+              ...prev.user,
+              savedBankDetails: details.bankDetails // Update saved details
+          };
+
+          return {
+              ...prev,
+              balance: newBalance,
+              user: updatedUser,
+              history: [...prev.history, newTx]
+          };
+      });
   };
 
   return (
@@ -318,6 +354,7 @@ const App: React.FC = () => {
                             <nav className="flex-1 px-4 space-y-2">
                                 <NavLink to="/" icon={<LayoutDashboard size={20}/>} label="Dashboard" />
                                 <NavLink to="/statement" icon={<FileText size={20}/>} label="Statement" />
+                                <NavLink to="/banking" icon={<CreditCard size={20}/>} label="Banking" />
                                 <div className="pt-6 pb-2 px-4 text-xs font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest">Games</div>
                                 <NavLink to="/blackjack" icon={<span className="text-xl">🃏</span>} label="Blackjack" />
                                 <NavLink to="/slots" icon={<span className="text-xl">🎰</span>} label="Mega Slots" />
@@ -370,11 +407,18 @@ const App: React.FC = () => {
                                     <Route path="/" element={
                                         <Dashboard 
                                             stats={stats} 
-                                            onDeposit={() => setShowDepositModal(true)} 
-                                            onWithdraw={() => setShowWithdrawModal(true)} 
+                                            onDeposit={() => {}} 
+                                            onWithdraw={() => {}} 
                                         />
                                     } />
                                     <Route path="/statement" element={<Statement history={stats.history} />} />
+                                    <Route path="/banking" element={
+                                        <Banking 
+                                            balance={stats.balance} 
+                                            savedBankDetails={stats.user.savedBankDetails}
+                                            onRequestTransaction={handleBankingRequest} 
+                                        />
+                                    } />
                                     <Route path="/blackjack" element={
                                         <div className="animate-in fade-in zoom-in duration-500">
                                             <div className="mb-8 text-center">
@@ -405,54 +449,6 @@ const App: React.FC = () => {
 
                         <PitBossChat />
 
-                        {/* Transaction Modals */}
-                        {(showDepositModal || showWithdrawModal) && (
-                            <div className="fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                                <div className="bg-white dark:bg-navy-900 border border-slate-200 dark:border-lavender-500/20 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                                        {showDepositModal ? 'Deposit Funds' : 'Withdraw Funds'}
-                                    </h3>
-                                    <form onSubmit={showDepositModal ? handleDeposit : handleWithdraw}>
-                                        <div className="mb-6">
-                                            <label className="block text-sm font-medium text-slate-500 dark:text-gray-400 mb-2">Amount</label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-3.5 text-gray-400">$</span>
-                                                <input 
-                                                    type="number" 
-                                                    min="1"
-                                                    max={showWithdrawModal ? stats.balance : 100000}
-                                                    value={txAmount}
-                                                    onChange={(e) => setTxAmount(e.target.value)}
-                                                    className="w-full bg-slate-100 dark:bg-navy-800 border border-slate-300 dark:border-navy-700 rounded-xl py-3 pl-8 pr-4 text-slate-900 dark:text-white focus:outline-none focus:border-lavender-500 focus:ring-1 focus:ring-lavender-500 transition-all"
-                                                    placeholder="0.00"
-                                                    required
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            {showWithdrawModal && (
-                                                <p className="text-xs text-gray-500 mt-2">Available: ${stats.balance.toLocaleString()}</p>
-                                            )}
-                                        </div>
-                                        <div className="flex gap-3">
-                                            <button 
-                                                type="button" 
-                                                onClick={() => { setShowDepositModal(false); setShowWithdrawModal(false); setTxAmount(''); }}
-                                                className="flex-1 bg-slate-200 dark:bg-navy-800 hover:bg-slate-300 dark:hover:bg-navy-700 text-slate-700 dark:text-white font-bold py-3 rounded-xl transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button 
-                                                type="submit" 
-                                                className="flex-1 bg-lavender-500 hover:bg-lavender-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-lavender-500/20"
-                                            >
-                                                Confirm
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Responsible Gaming Footer */}
                         <footer className="md:ml-64 p-8 border-t border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-[#0a1020] text-center mt-auto transition-colors duration-300">
                             <div className="flex items-center justify-center gap-2 text-gray-500 text-sm mb-2">
@@ -467,7 +463,7 @@ const App: React.FC = () => {
                         {/* Mobile Nav Bar (Bottom) */}
                         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1020] border-t border-slate-200 dark:border-white/10 flex justify-around p-4 z-40 pb-6 transition-colors duration-300">
                             <Link to="/" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><LayoutDashboard /></Link>
-                            <Link to="/statement" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><FileText /></Link>
+                            <Link to="/banking" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><CreditCard /></Link>
                             <Link to="/blackjack" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><span className="text-xl">🃏</span></Link>
                             <Link to="/dice" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><span className="text-xl">🎲</span></Link>
                         </div>

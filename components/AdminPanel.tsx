@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ADMIN_SECRET_KEY } from '../constants';
-import { PlayerStats, UserProfile } from '../types';
-import { Shield, Lock, Database, Search, User, CreditCard, Activity, X, Eye, ArrowLeft } from 'lucide-react';
+import { PlayerStats, UserProfile, Transaction } from '../types';
+import { Shield, Lock, Database, Search, User, CreditCard, Activity, X, Eye, ArrowLeft, CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DatabaseRecord {
@@ -17,22 +17,36 @@ export const AdminPanel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<DatabaseRecord | null>(null);
 
+  // Pending Transactions State
+  const [pendingTx, setPendingTx] = useState<{userEmail: string, tx: Transaction}[]>([]);
+
   // Load Data from LocalStorage
+  const loadDB = () => {
+    try {
+      const rawData = localStorage.getItem('neon_vegas_users');
+      if (rawData) {
+        const parsed = JSON.parse(rawData);
+        const records: DatabaseRecord[] = Object.values(parsed);
+        setDbData(records);
+
+        // Scan for pending transactions
+        const pending: {userEmail: string, tx: Transaction}[] = [];
+        records.forEach(record => {
+             record.stats.history.forEach(tx => {
+                 if (tx.status === 'pending') {
+                     pending.push({ userEmail: record.profile.email, tx });
+                 }
+             });
+        });
+        setPendingTx(pending);
+      }
+    } catch (e) {
+      console.error("Failed to load DB", e);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
-      const loadDB = () => {
-        try {
-          const rawData = localStorage.getItem('neon_vegas_users');
-          if (rawData) {
-            const parsed = JSON.parse(rawData);
-            // Convert Map-like object to Array
-            const records: DatabaseRecord[] = Object.values(parsed);
-            setDbData(records);
-          }
-        } catch (e) {
-          console.error("Failed to load DB", e);
-        }
-      };
       loadDB();
     }
   }, [isAuthenticated]);
@@ -45,6 +59,54 @@ export const AdminPanel: React.FC = () => {
     } else {
       setError('Invalid Security Key. Access Denied.');
     }
+  };
+
+  // Transaction Actions
+  const handleTxAction = (userEmail: string, txId: string, action: 'approve' | 'reject') => {
+      try {
+          const rawData = localStorage.getItem('neon_vegas_users');
+          if (!rawData) return;
+          const db = JSON.parse(rawData);
+          const userRecord = db[userEmail];
+          
+          if (!userRecord) return;
+
+          const txIndex = userRecord.stats.history.findIndex((t: Transaction) => t.id === txId);
+          if (txIndex === -1) return;
+
+          const tx = userRecord.stats.history[txIndex];
+          
+          // Logic for updating balance based on action
+          if (action === 'approve') {
+              tx.status = 'approved';
+              if (tx.type === 'deposit') {
+                  // Add funds now
+                  userRecord.stats.balance += tx.amount;
+                  tx.balanceAfter = userRecord.stats.balance; // Update snapshot
+              }
+              // Withdrawals already deducted balance, so approved just confirms it.
+          } else {
+              tx.status = 'rejected';
+              if (tx.type === 'withdrawal') {
+                  // Refund the deducted amount
+                  const refundAmount = Math.abs(tx.amount);
+                  userRecord.stats.balance += refundAmount;
+                  tx.balanceAfter = userRecord.stats.balance;
+                  
+                  // Optional: Add a refund record? No, simpler to just mark rejected and fix balance.
+              }
+              // Deposits rejected mean no money added.
+          }
+
+          // Save back
+          localStorage.setItem('neon_vegas_users', JSON.stringify(db));
+          
+          // Reload local state
+          loadDB();
+
+      } catch (e) {
+          console.error("Tx Action Failed", e);
+      }
   };
 
   const filteredUsers = dbData.filter(record => 
@@ -145,7 +207,7 @@ export const AdminPanel: React.FC = () => {
 
            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
               <div>
-                 <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">System Liability (User Balances)</p>
+                 <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">System Liability</p>
                  <h2 className="text-3xl font-black text-slate-900 dark:text-white">${totalLiability.toLocaleString()}</h2>
               </div>
               <CreditCard className="text-green-500" size={32} />
@@ -153,12 +215,70 @@ export const AdminPanel: React.FC = () => {
 
            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
               <div>
-                 <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Total Activity (Tx)</p>
-                 <h2 className="text-3xl font-black text-slate-900 dark:text-white">{totalTransactions.toLocaleString()}</h2>
+                 <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Pending Requests</p>
+                 <h2 className="text-3xl font-black text-slate-900 dark:text-white">{pendingTx.length}</h2>
               </div>
-              <Activity className="text-orange-500" size={32} />
+              <Clock className="text-yellow-500" size={32} />
            </div>
         </div>
+
+        {/* Pending Transactions Section */}
+        {pendingTx.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-orange-200 dark:border-orange-900/50 shadow-xl overflow-hidden mb-8">
+                 <div className="p-4 bg-orange-50 dark:bg-orange-900/10 border-b border-orange-200 dark:border-orange-900/30 flex items-center gap-2">
+                     <Clock className="text-orange-500" size={20} />
+                     <h3 className="font-bold text-orange-700 dark:text-orange-400">Pending Transaction Requests</h3>
+                 </div>
+                 <div className="overflow-x-auto">
+                     <table className="w-full text-left">
+                         <thead className="bg-slate-50 dark:bg-slate-800 text-xs uppercase text-slate-500">
+                             <tr>
+                                 <th className="p-4">User</th>
+                                 <th className="p-4">Type</th>
+                                 <th className="p-4">Amount</th>
+                                 <th className="p-4">Details</th>
+                                 <th className="p-4 text-right">Actions</th>
+                             </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                             {pendingTx.map((item) => (
+                                 <tr key={item.tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                     <td className="p-4 text-sm font-bold text-slate-700 dark:text-slate-300">{item.userEmail}</td>
+                                     <td className="p-4">
+                                         <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${item.tx.type === 'deposit' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                             {item.tx.type}
+                                         </span>
+                                     </td>
+                                     <td className="p-4 font-mono font-bold">${Math.abs(item.tx.amount).toLocaleString()}</td>
+                                     <td className="p-4 text-sm text-slate-500">
+                                         {item.tx.transactionRef && <div>Ref: <span className="font-mono text-slate-700 dark:text-white">{item.tx.transactionRef}</span></div>}
+                                         {item.tx.bankDetails && (
+                                             <div className="text-xs mt-1">
+                                                 Bank: {item.tx.bankDetails.bankName} - {item.tx.bankDetails.accountNumber}
+                                             </div>
+                                         )}
+                                     </td>
+                                     <td className="p-4 text-right flex justify-end gap-2">
+                                         <button 
+                                            onClick={() => handleTxAction(item.userEmail, item.tx.id, 'approve')}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded shadow-sm text-xs font-bold flex items-center gap-1"
+                                         >
+                                             <CheckCircle size={14} /> Approve
+                                         </button>
+                                         <button 
+                                            onClick={() => handleTxAction(item.userEmail, item.tx.id, 'reject')}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow-sm text-xs font-bold flex items-center gap-1"
+                                         >
+                                             <XCircle size={14} /> Reject
+                                         </button>
+                                     </td>
+                                 </tr>
+                             ))}
+                         </tbody>
+                     </table>
+                 </div>
+            </div>
+        )}
 
         {/* User Database Table */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
@@ -233,10 +353,20 @@ export const AdminPanel: React.FC = () => {
                  <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{selectedUser.profile.username}</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">{selectedUser.profile.email}</p>
-                    {selectedUser.profile.password && (
-                        <p className="text-xs text-red-400 mt-2 font-mono bg-red-500/10 inline-block px-2 py-1 rounded">
-                           Pwd: {selectedUser.profile.password} (Insecure/Simulated)
-                        </p>
+                    
+                    {/* Bank Details View */}
+                    {selectedUser.profile.savedBankDetails && (
+                        <div className="mt-3 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg text-xs">
+                             <div className="flex items-center gap-2 mb-1 font-bold uppercase text-slate-500">
+                                 <CreditCard size={12}/> Saved Bank Details
+                             </div>
+                             <p className="text-slate-700 dark:text-slate-300">
+                                 {selectedUser.profile.savedBankDetails.accountHolder} | {selectedUser.profile.savedBankDetails.bankName}
+                             </p>
+                             <p className="font-mono text-slate-500">
+                                 {selectedUser.profile.savedBankDetails.accountNumber}
+                             </p>
+                        </div>
                     )}
                  </div>
                  <button onClick={() => setSelectedUser(null)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-white">
@@ -252,7 +382,11 @@ export const AdminPanel: React.FC = () => {
                     {[...selectedUser.stats.history].reverse().map((tx) => (
                        <div key={tx.id} className="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50">
                           <div>
-                             <p className="font-bold text-sm text-slate-700 dark:text-slate-200">{tx.description}</p>
+                             <div className="flex items-center gap-2">
+                                <p className="font-bold text-sm text-slate-700 dark:text-slate-200">{tx.description}</p>
+                                {tx.status === 'pending' && <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1 rounded border border-yellow-200">PENDING</span>}
+                                {tx.status === 'rejected' && <span className="text-[10px] bg-red-100 text-red-800 px-1 rounded border border-red-200">REJECTED</span>}
+                             </div>
                              <p className="text-xs text-slate-400 font-mono">{tx.date}</p>
                           </div>
                           <div className={`text-right font-mono font-bold ${
@@ -263,14 +397,7 @@ export const AdminPanel: React.FC = () => {
                           </div>
                        </div>
                     ))}
-                    {selectedUser.stats.history.length === 0 && (
-                        <div className="p-8 text-center text-slate-400 italic">No activity recorded.</div>
-                    )}
                  </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-center text-xs text-slate-400">
-                 User ID hash: {btoa(selectedUser.profile.email).substring(0, 12)}
               </div>
            </div>
         </div>

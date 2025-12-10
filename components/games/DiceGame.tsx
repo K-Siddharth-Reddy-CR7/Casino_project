@@ -28,7 +28,28 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
     setBetAmount(newBet);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    if (isNaN(val)) {
+        setBetAmount(0);
+    } else {
+        setBetAmount(val);
+    }
+  };
+
+  const handleInputBlur = () => {
+    let newBet = betAmount;
+    if (newBet < MIN_BET) newBet = MIN_BET;
+    if (newBet > MAX_BET) newBet = MAX_BET;
+    setBetAmount(newBet);
+  };
+
   const handleRoll = async () => {
+    if (betAmount < MIN_BET || betAmount > MAX_BET) {
+        setMessage(`Bet must be between $${MIN_BET} and $${MAX_BET}`);
+        handleInputBlur();
+        return;
+    }
     if (!selectedBet) {
       setMessage("Please select a prediction!");
       return;
@@ -176,13 +197,37 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-6 z-10">
-             <div className="flex flex-col items-center">
+        <div className="flex items-center gap-6 z-10 mt-4">
+             <div className="flex flex-col items-center gap-2">
                  <div className="flex items-center bg-slate-200 dark:bg-black/40 rounded-lg p-1 border border-slate-300 dark:border-white/10">
-                    <button onClick={() => handleBetChange(-10)} className="w-10 h-10 flex items-center justify-center text-slate-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded disabled:opacity-50" disabled={betAmount <= MIN_BET}>-</button>
-                    <span className="w-20 text-center font-mono text-lavender-600 dark:text-lavender-400 font-bold">${betAmount}</span>
-                    <button onClick={() => handleBetChange(10)} className="w-10 h-10 flex items-center justify-center text-slate-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded disabled:opacity-50" disabled={betAmount >= MAX_BET}>+</button>
+                    <button onClick={() => handleBetChange(-10)} className="w-12 h-10 flex items-center justify-center text-slate-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded text-xl">-</button>
+                    <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-mono">$</span>
+                        <input 
+                            type="number" 
+                            value={betAmount === 0 ? '' : betAmount}
+                            onChange={handleInputChange}
+                            onBlur={handleInputBlur}
+                            className="w-24 bg-transparent text-center font-mono font-bold text-xl text-lavender-600 dark:text-lavender-400 focus:outline-none pl-3"
+                        />
+                    </div>
+                    <button onClick={() => handleBetChange(10)} className="w-12 h-10 flex items-center justify-center text-slate-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded text-xl">+</button>
                  </div>
+                 
+                 {/* Quick Bet Buttons - Increased Size */}
+                 <div className="flex gap-2 flex-wrap justify-center w-full max-w-[240px]">
+                      {[5, 10, 25, 50, 100].map((amt) => (
+                          <button
+                              key={amt}
+                              onClick={() => handleBetChange(amt)}
+                              disabled={betAmount + amt > MAX_BET}
+                              className="px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-lavender-100 dark:hover:bg-lavender-500/20 text-slate-600 dark:text-gray-300 rounded-lg text-sm font-bold border border-slate-200 dark:border-white/10 transition-colors disabled:opacity-50 min-w-[60px]"
+                          >
+                              +${amt}
+                          </button>
+                      ))}
+                 </div>
+
                  <span className="text-[10px] text-gray-500 mt-1">Min ${MIN_BET} - Max ${MAX_BET}</span>
              </div>
 

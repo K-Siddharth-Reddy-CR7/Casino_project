@@ -3,7 +3,7 @@ import { PlayerStats } from '../types';
 import { TrendingUp, DollarSign, Award, ArrowRight, Wallet, ArrowDownCircle, ArrowUpCircle, Target, Star, Sparkles, CheckCircle2, Lock, Unlock } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { PROMOTIONS } from '../constants';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   stats: PlayerStats;
@@ -12,6 +12,8 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdraw }) => {
+  const navigate = useNavigate();
+
   const getPromoLink = (id: string) => {
     switch (id) {
         case 'dice-promo': return '/dice';
@@ -23,7 +25,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
   // Calculate unlocking progress
   const TARGET_DEPOSIT = 5000;
   const totalDeposits = stats.history
-    .filter(tx => tx.type === 'deposit')
+    .filter(tx => tx.type === 'deposit' && (tx.status === 'approved' || !tx.status)) // Count only approved or legacy deposits
     .reduce((sum, tx) => sum + tx.amount, 0);
   
   const isUnlocked = totalDeposits >= TARGET_DEPOSIT;
@@ -61,14 +63,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
               {/* Action Buttons */}
               <div className="flex gap-4 z-10 relative">
                   <button 
-                    onClick={onDeposit}
+                    onClick={() => navigate('/banking')}
                     className="flex-1 bg-lavender-500 hover:bg-lavender-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-lavender-500/20"
                     aria-label="Deposit Funds"
                   >
                       <ArrowDownCircle size={18} /> Deposit
                   </button>
                   <button 
-                    onClick={onWithdraw}
+                    onClick={() => navigate('/banking')}
                     className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all border border-white/10"
                     aria-label="Withdraw Funds"
                   >
@@ -217,7 +219,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
                            </button>
                       ) : (
                           <button 
-                            onClick={onDeposit}
+                            onClick={() => navigate('/banking')}
                             className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold py-4 px-8 rounded-full transition-all flex items-center gap-2"
                             aria-label="Deposit to Unlock"
                           >

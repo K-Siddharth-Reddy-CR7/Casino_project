@@ -24,7 +24,28 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
       setBet(newBet);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    if (isNaN(val)) {
+        setBet(0);
+    } else {
+        setBet(val);
+    }
+  };
+
+  const handleInputBlur = () => {
+    let newBet = bet;
+    if (newBet < MIN_BET) newBet = MIN_BET;
+    if (newBet > MAX_BET) newBet = MAX_BET;
+    setBet(newBet);
+  };
+
   const handleSpin = () => {
+    if (bet < MIN_BET || bet > MAX_BET) {
+        setMessage(`BET MIN: $${MIN_BET}`);
+        handleInputBlur();
+        return;
+    }
     if (balance < bet) {
       setMessage("INSUFFICIENT FUNDS");
       return;
@@ -83,25 +104,25 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-slate-900 dark:bg-gradient-to-b dark:from-navy-900 dark:to-black rounded-[3rem] border-8 border-lavender-500/50 shadow-[0_0_80px_rgba(167,139,250,0.3)] max-w-4xl mx-auto w-full relative overflow-hidden transition-colors duration-300">
+    <div className="flex flex-col items-center justify-center p-6 bg-slate-900 dark:bg-gradient-to-b dark:from-navy-900 dark:to-black rounded-[2rem] border-4 border-lavender-500/50 shadow-[0_0_50px_rgba(167,139,250,0.3)] max-w-2xl mx-auto w-full relative overflow-hidden transition-colors duration-300">
       
       {/* Decorative Lights */}
-      <div className="absolute top-3 w-full flex justify-between px-8">
-        <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_red]"></div>
-        <div className="w-4 h-4 rounded-full bg-lavender-400 animate-pulse delay-75 shadow-[0_0_10px_#a78bfa]"></div>
-        <div className="w-4 h-4 rounded-full bg-blue-500 animate-pulse delay-150 shadow-[0_0_10px_blue]"></div>
-        <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse delay-300 shadow-[0_0_10px_green]"></div>
+      <div className="absolute top-3 w-full flex justify-between px-6">
+        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_red]"></div>
+        <div className="w-3 h-3 rounded-full bg-lavender-400 animate-pulse delay-75 shadow-[0_0_8px_#a78bfa]"></div>
+        <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse delay-150 shadow-[0_0_8px_blue]"></div>
+        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse delay-300 shadow-[0_0_8px_green]"></div>
       </div>
 
-      <div className="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-lavender-300 via-lavender-500 to-indigo-400 mb-10 tracking-tighter drop-shadow-2xl">
+      <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-lavender-300 via-lavender-500 to-indigo-400 mb-6 tracking-tighter drop-shadow-xl mt-2">
         MEGA SLOTS
       </div>
 
       {/* Reels Container */}
-      <div className="flex gap-6 p-8 bg-black rounded-3xl border-8 border-gray-800 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] mb-10">
+      <div className="flex gap-3 p-4 bg-black rounded-2xl border-4 border-gray-800 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)] mb-6">
         {reels.map((symbol, i) => (
-          <div key={i} className="w-32 h-48 bg-white rounded-xl flex items-center justify-center text-7xl shadow-[inset_0_0_30px_rgba(0,0,0,0.4)] border-2 border-gray-300 overflow-hidden relative">
-             <div className={`transition-all duration-100 ${isSpinning ? 'blur-md scale-110' : ''}`}>
+          <div key={i} className="w-20 h-32 bg-white rounded-lg flex items-center justify-center text-5xl shadow-[inset_0_0_20px_rgba(0,0,0,0.4)] border border-gray-300 overflow-hidden relative">
+             <div className={`transition-all duration-100 ${isSpinning ? 'blur-sm scale-110' : ''}`}>
                {symbol.icon}
              </div>
              {/* Shine effect */}
@@ -111,30 +132,54 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
       </div>
 
       {/* Status Bar */}
-      <div className="w-full max-w-2xl bg-navy-800 border-2 border-navy-700 p-4 rounded-xl mb-10 text-center shadow-lg">
-         <p className="text-lavender-400 font-mono font-bold text-3xl animate-pulse tracking-widest">{message}</p>
+      <div className="w-full max-w-md bg-navy-800 border border-navy-700 p-3 rounded-lg mb-6 text-center shadow-md">
+         <p className="text-lavender-400 font-mono font-bold text-xl animate-pulse tracking-widest">{message}</p>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col md:flex-row items-center gap-10 w-full justify-center">
-          <div className="flex flex-col items-center bg-gray-900/50 p-6 rounded-2xl border border-white/10">
-              <span className="text-sm text-gray-400 uppercase tracking-widest font-bold mb-2">Bet Amount</span>
-              <div className="flex bg-gray-800 rounded-full p-2 gap-2 shadow-inner">
-                 <button onClick={() => handleBetChange(-10)} className="w-12 h-12 rounded-full bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50 text-xl font-bold transition-colors" disabled={bet <= MIN_BET}>-</button>
-                 <span className="w-24 flex items-center justify-center font-mono text-2xl text-white font-bold text-shadow">${bet}</span>
-                 <button onClick={() => handleBetChange(10)} className="w-12 h-12 rounded-full bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50 text-xl font-bold transition-colors" disabled={bet >= MAX_BET}>+</button>
+      {/* Controls - Compact */}
+      <div className="flex flex-col md:flex-row items-center gap-6 w-full justify-center">
+          <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-white/10 max-w-xs w-full">
+              <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Bet Amount</span>
+              <div className="flex bg-gray-800 rounded-full p-1.5 gap-2 shadow-inner items-center w-full justify-between">
+                 <button onClick={() => handleBetChange(-10)} className="w-8 h-8 rounded-full bg-gray-700 text-white hover:bg-gray-600 flex items-center justify-center text-lg font-bold transition-colors">-</button>
+                 <div className="relative w-20 flex justify-center">
+                    <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500 font-mono text-sm">$</span>
+                    <input 
+                       type="number"
+                       value={bet === 0 ? '' : bet}
+                       onChange={handleInputChange}
+                       onBlur={handleInputBlur}
+                       className="w-full bg-transparent text-center font-mono text-lg text-white font-bold text-shadow focus:outline-none pl-3"
+                    />
+                 </div>
+                 <button onClick={() => handleBetChange(10)} className="w-8 h-8 rounded-full bg-gray-700 text-white hover:bg-gray-600 flex items-center justify-center text-lg font-bold transition-colors">+</button>
               </div>
-              <span className="text-xs text-gray-500 mt-2 font-mono">Min ${MIN_BET} - Max ${MAX_BET}</span>
+              
+              {/* Quick Bet Buttons */}
+              <div className="flex gap-1.5 mt-3 flex-wrap justify-center">
+                  {[5, 10, 25, 50, 100].map((amt) => (
+                      <button
+                          key={amt}
+                          onClick={() => handleBetChange(amt)}
+                          disabled={bet + amt > MAX_BET}
+                          className="px-2 py-1 bg-gray-700 hover:bg-lavender-500 text-gray-300 hover:text-white rounded text-xs font-bold border border-gray-600 transition-colors disabled:opacity-50 min-w-[45px]"
+                      >
+                          +${amt}
+                      </button>
+                  ))}
+              </div>
+
+              <span className="text-[10px] text-gray-500 mt-2 font-mono">Min ${MIN_BET} - Max ${MAX_BET}</span>
           </div>
           
           <button 
             onClick={handleSpin}
             disabled={isSpinning}
             className={`
-                relative w-32 h-32 rounded-full border-8 border-red-800 shadow-[0_10px_20px_rgba(0,0,0,0.5)]
-                flex items-center justify-center font-black text-white text-2xl tracking-widest
+                relative w-24 h-24 rounded-full border-4 border-red-800 shadow-[0_5px_15px_rgba(0,0,0,0.5)]
+                flex items-center justify-center font-black text-white text-lg tracking-widest
                 transition-all duration-150 active:scale-95 active:shadow-inner active:border-red-900
-                ${isSpinning ? 'bg-red-900 cursor-not-allowed opacity-80' : 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 cursor-pointer hover:shadow-[0_0_30px_rgba(239,68,68,0.6)]'}
+                ${isSpinning ? 'bg-red-900 cursor-not-allowed opacity-80' : 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 cursor-pointer hover:shadow-[0_0_20px_rgba(239,68,68,0.6)]'}
             `}
           >
              <div className="absolute inset-0 rounded-full border-2 border-white/20"></div>
@@ -142,7 +187,7 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
           </button>
       </div>
 
-      <div className="mt-8 text-center text-sm font-bold text-gray-500 tracking-wider">
+      <div className="mt-6 text-center text-xs font-bold text-gray-500 tracking-wider">
         MULTIPLIERS: 🍒 2x | 7️⃣ 20x | 🎰 50x
       </div>
     </div>
