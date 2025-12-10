@@ -1,6 +1,6 @@
 import { SlotSymbol, Promotion } from './types';
 
-export const INITIAL_BALANCE = 1000;
+export const INITIAL_BALANCE = 0;
 export const MIN_BET = 1;
 export const MAX_BET = 1000;
 export const ADMIN_SECRET_KEY = 'ksr';
@@ -30,6 +30,12 @@ Games available:
    - Ace is high.
    - Correct guess pays 2x.
    - Tie is a push.
+5. Aviator (Multiplier curve game).
+   - A plane takes off and the multiplier rises (1.00x upwards).
+   - The player must CASHOUT before the plane flies away (crashes).
+   - If they cash out, they win Bet * Multiplier.
+   - If it crashes first, they lose the bet.
+   - It's a game of nerve and timing.
 
 Always remind the user that this is a social casino with play money and to gamble responsibly in real life.
 Keep your responses relatively short, punchy, and use casino slang (e.g., 'high roller', 'snake eyes', 'hit me').
@@ -42,7 +48,7 @@ export const PROMOTIONS: Promotion[] = [
     title: 'Welcome Bonus',
     description: 'New players get 2x XP this weekend on all table games!',
     color: 'text-white',
-    gradient: 'from-yellow-400 to-orange-500',
+    gradient: 'from-yellow-400 to-orange-500', // Fully opaque
     action: 'PLAY BLACKJACK'
   },
   {
@@ -50,7 +56,7 @@ export const PROMOTIONS: Promotion[] = [
     title: 'Neon VIP Club',
     description: 'Reach $10k balance to unlock exclusive high-roller tables.',
     color: 'text-white',
-    gradient: 'from-purple-500 to-indigo-600',
+    gradient: 'from-purple-500 to-indigo-600', // Fully opaque
     action: 'VIEW STATEMENT'
   },
   {
@@ -58,7 +64,7 @@ export const PROMOTIONS: Promotion[] = [
     title: 'Hot Dice Night',
     description: 'Hit a "Hard 7" (Lucky 7) and win a mystery jackpot!',
     color: 'text-white',
-    gradient: 'from-red-500 to-pink-600',
+    gradient: 'from-red-500 to-pink-600', // Fully opaque
     action: 'PLAY DICE'
   }
 ];

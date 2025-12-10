@@ -80,9 +80,33 @@ export const AdminPanel: React.FC = () => {
           if (action === 'approve') {
               tx.status = 'approved';
               if (tx.type === 'deposit') {
-                  // Add funds now
+                  
+                  // Check if this is the FIRST approved deposit
+                  const previousDeposits = userRecord.stats.history.filter((t: Transaction) => 
+                      t.type === 'deposit' && t.status === 'approved' && t.id !== txId
+                  );
+
+                  // Add original deposit
                   userRecord.stats.balance += tx.amount;
-                  tx.balanceAfter = userRecord.stats.balance; // Update snapshot
+                  tx.balanceAfter = userRecord.stats.balance;
+
+                  // Apply First Deposit Bonus (50%)
+                  if (previousDeposits.length === 0) {
+                      const bonusAmount = tx.amount * 0.5;
+                      
+                      const bonusTx: Transaction = {
+                          id: `bonus-${Date.now()}`,
+                          type: 'bonus',
+                          amount: bonusAmount,
+                          date: new Date().toLocaleString(),
+                          description: 'First Deposit Bonus (50%)',
+                          balanceAfter: userRecord.stats.balance + bonusAmount,
+                          status: 'approved'
+                      };
+
+                      userRecord.stats.history.push(bonusTx);
+                      userRecord.stats.balance += bonusAmount;
+                  }
               }
               // Withdrawals already deducted balance, so approved just confirms it.
           } else {
@@ -92,8 +116,6 @@ export const AdminPanel: React.FC = () => {
                   const refundAmount = Math.abs(tx.amount);
                   userRecord.stats.balance += refundAmount;
                   tx.balanceAfter = userRecord.stats.balance;
-                  
-                  // Optional: Add a refund record? No, simpler to just mark rejected and fix balance.
               }
               // Deposits rejected mean no money added.
           }
@@ -390,7 +412,7 @@ export const AdminPanel: React.FC = () => {
                              <p className="text-xs text-slate-400 font-mono">{tx.date}</p>
                           </div>
                           <div className={`text-right font-mono font-bold ${
-                             tx.type === 'win' || tx.type === 'deposit' ? 'text-green-500' : 'text-red-500'
+                             tx.type === 'win' || tx.type === 'deposit' || tx.type === 'bonus' ? 'text-green-500' : 'text-red-500'
                           }`}>
                              {tx.amount > 0 && tx.type !== 'loss' && tx.type !== 'withdrawal' ? '+' : ''}
                              {tx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { User, Lock, ArrowRight, Mail, AlertCircle } from 'lucide-react';
+import { User, Lock, ArrowRight, Mail, AlertCircle, Gamepad2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { Link } from 'react-router-dom';
 
 interface AuthProps {
   onLogin: (user: UserProfile) => void;
   onSignup: (user: UserProfile) => void;
+  onDemoLogin?: () => void;
 }
 
-export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup }) => {
+export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, onDemoLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
   
   const [username, setUsername] = useState('');
@@ -161,7 +162,18 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup }) => {
               </button>
             </form>
 
-            <div className="mt-8 text-center border-t border-slate-200 dark:border-white/5 pt-6">
+            <div className="mt-4 border-t border-slate-200 dark:border-white/5 pt-4">
+                {onDemoLogin && (
+                    <button 
+                        onClick={onDemoLogin}
+                        className="w-full border-2 border-dashed border-slate-300 dark:border-white/10 text-slate-500 dark:text-gray-400 font-bold py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                        <Gamepad2 size={18} /> Demo Login
+                    </button>
+                )}
+            </div>
+
+            <div className="mt-4 text-center">
               <p className="text-sm text-slate-500 dark:text-gray-400">
                 {isLogin ? "Don't have an account?" : "Already a member?"}
                 <button 

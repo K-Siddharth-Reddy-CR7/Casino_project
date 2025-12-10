@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Transaction } from '../types';
-import { ArrowUpRight, ArrowDownLeft, Trophy, MinusCircle, Wallet, BrainCircuit, Filter, PieChart, TrendingUp, Dice5, CircleDollarSign, ArrowUp, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Trophy, MinusCircle, Wallet, BrainCircuit, Filter, PieChart, TrendingUp, Dice5, CircleDollarSign, ArrowUp, Clock, AlertCircle, Rocket } from 'lucide-react';
 import { analyzePlayerHistory } from '../services/geminiService';
 
 interface StatementProps {
   history: Transaction[];
 }
 
-type FilterType = 'all' | 'win' | 'loss' | 'banking' | 'blackjack' | 'slots' | 'dice' | 'highlow';
+type FilterType = 'all' | 'win' | 'loss' | 'banking' | 'blackjack' | 'slots' | 'dice' | 'highlow' | 'aviator';
 
 export const Statement: React.FC<StatementProps> = ({ history }) => {
   const [filter, setFilter] = useState<FilterType>('all');
@@ -28,6 +28,7 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
     if (filter === 'slots') return desc.includes('slots');
     if (filter === 'dice') return desc.includes('dice');
     if (filter === 'highlow') return desc.includes('highlow') || desc.includes('high-low');
+    if (filter === 'aviator') return desc.includes('aviator');
     
     return true;
   });
@@ -46,7 +47,7 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
 
   // Per Game Stats Calculation
   const getGameStats = (gameName: string) => {
-      const gameTx = history.filter(tx => tx.description.includes(gameName));
+      const gameTx = history.filter(tx => tx.description.toLowerCase().includes(gameName.toLowerCase()));
       const wins = gameTx.filter(tx => tx.type === 'win').length;
       const losses = gameTx.filter(tx => tx.type === 'loss').length;
       const net = gameTx.reduce((acc, tx) => {
@@ -59,6 +60,7 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
   const slotsStats = getGameStats('Slots');
   const diceStats = getGameStats('Dice');
   const highLowStats = getGameStats('HighLow');
+  const aviatorStats = getGameStats('Aviator');
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
@@ -179,11 +181,12 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
       </div>
 
       {/* Per Game Performance */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {renderGameCard('Blackjack', <div className="relative inline-block"><Dice5 size={14} /><div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></div></div>, blackjackStats)}
           {renderGameCard('Slots', <CircleDollarSign size={14} />, slotsStats)}
           {renderGameCard('Dice', <Dice5 size={14} className="rotate-45" />, diceStats)}
           {renderGameCard('High-Low', <ArrowUp size={14} />, highLowStats)}
+          {renderGameCard('Aviator', <Rocket size={14} />, aviatorStats)}
       </div>
 
       {/* Main Table Section */}
@@ -191,7 +194,7 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
         
         {/* Filter Tabs */}
         <div className="flex border-b border-slate-200 dark:border-navy-700 overflow-x-auto scrollbar-hide">
-            {(['all', 'win', 'loss', 'banking', 'blackjack', 'slots', 'dice', 'highlow'] as const).map((f) => (
+            {(['all', 'win', 'loss', 'banking', 'blackjack', 'slots', 'dice', 'highlow', 'aviator'] as const).map((f) => (
                 <button
                     key={f}
                     onClick={() => setFilter(f)}
@@ -251,7 +254,7 @@ export const Statement: React.FC<StatementProps> = ({ history }) => {
                             {tx.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                         </td>
                         <td className="p-6 text-right font-mono text-slate-500 dark:text-gray-400">
-                            {tx.balanceAfter.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                            ${tx.balanceAfter.toLocaleString()}
                         </td>
                     </tr>
                 ))

@@ -6,13 +6,14 @@ import { Blackjack } from './components/games/Blackjack';
 import { SlotMachine } from './components/games/SlotMachine';
 import { DiceGame } from './components/games/DiceGame';
 import { HighLow } from './components/games/HighLow';
+import { Aviator } from './components/games/Aviator';
 import { Dashboard } from './components/Dashboard';
 import { PitBossChat } from './components/PitBossChat';
 import { Statement } from './components/Statement';
 import { AdminPanel } from './components/AdminPanel';
 import { Auth } from './components/Auth';
 import { Banking } from './components/Banking';
-import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, Lock, ArrowLeft, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, ArrowLeft, CreditCard, Rocket } from 'lucide-react';
 
 const STORAGE_KEY_USERS = 'neon_vegas_users';
 const STORAGE_KEY_SESSION = 'neon_vegas_session';
@@ -249,6 +250,43 @@ const App: React.FC = () => {
       loadUserData(user.email);
   };
 
+  const handleDemoLogin = () => {
+    const demoId = Date.now().toString().slice(-4);
+    const demoEmail = `guest_${demoId}@neonvegas.demo`;
+    
+    const demoUser: UserProfile = {
+        username: `Guest Player ${demoId}`,
+        email: demoEmail,
+        password: 'demo' // placeholder
+    };
+
+    const newStats: PlayerStats = {
+        balance: 0, // STRICTLY ZERO BALANCE
+        wins: 0,
+        losses: 0,
+        history: [{
+            id: 'demo-init',
+            type: 'deposit', // Just a placeholder type
+            amount: 0,
+            date: new Date().toLocaleString(),
+            description: 'Demo Account Created',
+            balanceAfter: 0,
+            status: 'approved'
+        }],
+        user: demoUser
+    };
+
+    const db = getDB();
+    db[demoEmail] = {
+        stats: newStats,
+        profile: demoUser
+    };
+    
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(db));
+    localStorage.setItem(STORAGE_KEY_SESSION, demoEmail);
+    loadUserData(demoEmail);
+  };
+
   const handleLogout = () => {
     // Force save before logout to ensure latest state is captured
     if (currentUserEmail) {
@@ -337,7 +375,7 @@ const App: React.FC = () => {
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={
                 !isAuthenticated ? (
-                    <Auth onLogin={handleLogin} onSignup={handleSignup} />
+                    <Auth onLogin={handleLogin} onSignup={handleSignup} onDemoLogin={handleDemoLogin} />
                 ) : (
                     <>
                         {/* Navigation / Sidebar (Desktop) */}
@@ -360,6 +398,7 @@ const App: React.FC = () => {
                                 <NavLink to="/slots" icon={<span className="text-xl">🎰</span>} label="Mega Slots" />
                                 <NavLink to="/dice" icon={<span className="text-xl">🎲</span>} label="Neon Dice" />
                                 <NavLink to="/highlow" icon={<span className="text-xl">🔼</span>} label="High-Low" />
+                                <NavLink to="/aviator" icon={<Rocket size={20} />} label="Aviator" />
                             </nav>
 
                             <div className="p-6 border-t border-slate-200 dark:border-white/5 space-y-4">
@@ -443,6 +482,15 @@ const App: React.FC = () => {
                                             <HighLow onGameEnd={(amt) => updateBalance(amt, 'HighLow')} balance={stats.balance} />
                                         </div>
                                     } />
+                                    <Route path="/aviator" element={
+                                        <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center">
+                                            <div className="mb-8 text-center">
+                                                <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Aviator</h2>
+                                                <p className="text-slate-500 dark:text-gray-400">Cashout before the plane flies away!</p>
+                                            </div>
+                                            <Aviator onGameEnd={(amt) => updateBalance(amt, 'Aviator')} balance={stats.balance} />
+                                        </div>
+                                    } />
                                 </Routes>
                             </div>
                         </main>
@@ -465,7 +513,7 @@ const App: React.FC = () => {
                             <Link to="/" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><LayoutDashboard /></Link>
                             <Link to="/banking" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><CreditCard /></Link>
                             <Link to="/blackjack" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><span className="text-xl">🃏</span></Link>
-                            <Link to="/dice" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><span className="text-xl">🎲</span></Link>
+                            <Link to="/aviator" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><Rocket /></Link>
                         </div>
                     </>
                 )

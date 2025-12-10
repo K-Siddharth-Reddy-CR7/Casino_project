@@ -44,7 +44,25 @@ const playNoise = (duration: number, vol = 0.05) => {
     noise.start();
 };
 
-export const playSound = (type: 'win' | 'loss' | 'card' | 'slot-reel' | 'dice-shake' | 'jackpot') => {
+const playRamp = (startFreq: number, endFreq: number, duration: number, vol = 0.1) => {
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
+
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+};
+
+export const playSound = (type: 'win' | 'loss' | 'card' | 'slot-reel' | 'dice-shake' | 'jackpot' | 'plane-takeoff' | 'crash') => {
   try {
       switch (type) {
         case 'win':
@@ -70,7 +88,6 @@ export const playSound = (type: 'win' | 'loss' | 'card' | 'slot-reel' | 'dice-sh
           break;
         case 'slot-reel':
           // Mechanical Clack/Blip
-          // High pitch short blip + mechanical noise
           playTone(800, 'square', 0.05, 0, 0.03); 
           playNoise(0.05, 0.04);
           break;
@@ -79,6 +96,15 @@ export const playSound = (type: 'win' | 'loss' | 'card' | 'slot-reel' | 'dice-sh
           playNoise(0.1, 0.08);
           playTone(600, 'square', 0.05, 0.02, 0.02);
           break;
+        case 'plane-takeoff':
+            // Engine rising sound
+            playRamp(200, 600, 2, 0.05);
+            break;
+        case 'crash':
+            // Explosion
+            playNoise(0.4, 0.15);
+            playTone(80, 'sawtooth', 0.4, 0, 0.2);
+            break;
       }
   } catch (e) {
       console.error("Audio playback failed", e);
