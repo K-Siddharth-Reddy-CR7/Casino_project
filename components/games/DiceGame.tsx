@@ -33,11 +33,23 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
   const [autoConfig, setAutoConfig] = useState<AutoBetConfig>({ rounds: 10, stopProfit: 0, stopLoss: 0 });
   const [autoStats, setAutoStats] = useState({ roundsPlayed: 0, initialBalance: 0, netProfit: 0 });
 
+  // Refs for tracking audio loop cleanup
+  const rollIntervalRef = useRef<number | null>(null);
+  const autoLoopTimeoutRef = useRef<number | null>(null);
+
   const autoStateRef = useRef({ isAutoBetting, autoConfig, autoStats, balance, selectedBet });
 
   useEffect(() => {
     autoStateRef.current = { isAutoBetting, autoConfig, autoStats, balance, selectedBet };
   }, [isAutoBetting, autoConfig, autoStats, balance, selectedBet]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
+      if (autoLoopTimeoutRef.current) clearTimeout(autoLoopTimeoutRef.current);
+    };
+  }, []);
 
   const rollDice = () => Math.floor(Math.random() * 6) + 1;
 
@@ -88,6 +100,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
   const stopAutoBet = () => {
       setIsAutoBetting(false);
       setMessage("Auto Roll Stopped");
+      if (autoLoopTimeoutRef.current) clearTimeout(autoLoopTimeoutRef.current);
   };
 
   const handleRoll = async (isAutoTrigger = false) => {
@@ -117,14 +130,17 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
     onGameEnd(-betAmount); // Deduct bet immediately
 
     let ticks = 0;
-    const interval = setInterval(() => {
+    if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
+
+    rollIntervalRef.current = window.setInterval(() => {
       setDice1(rollDice());
       setDice2(rollDice());
       ticks++;
       if (ticks % 2 === 0) playSound('dice-shake');
 
       if (ticks > 10) {
-        clearInterval(interval);
+        if (rollIntervalRef.current) clearInterval(rollIntervalRef.current);
+        rollIntervalRef.current = null;
         finalizeGame();
       }
     }, 100);
@@ -175,7 +191,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
     const { isAutoBetting: currentAuto, autoConfig: config, autoStats: stats, balance: currentBalance } = autoStateRef.current;
     
     if (currentAuto) {
-        setTimeout(() => {
+        autoLoopTimeoutRef.current = window.setTimeout(() => {
              if (!autoStateRef.current.isAutoBetting) return;
 
              const sessionProfit = (currentBalance + winnings) - stats.initialBalance;
@@ -215,18 +231,17 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
         
         {/* Auto Bet Overlay */}
         {isAutoBetting && (
-            <div className="absolute top-4 left-4 right-4 bg-amber-500/10 border border-amber-500 rounded-xl p-3 flex justify-between items-center animate-pulse z-30">
+            <div className="absolute top-4 z-50 bg-amber-500/10 backdrop-blur-md border border-amber-500/50 rounded-full px-6 py-2 flex items-center gap-4 shadow-xl animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm">
-                    <Zap size={16} className="fill-current" />
+                    <Zap size={16} className="fill-current animate-pulse" />
                     AUTO ROLLING ({selectedBet?.toUpperCase()})
                 </div>
+                <div className="h-4 w-px bg-amber-500/30"></div>
                 <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                    Rounds: {autoStats.roundsPlayed}/{autoConfig.rounds} | P/L: <span className={autoStats.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                        {autoStats.netProfit >= 0 ? '+' : ''}${autoStats.netProfit}
-                    </span>
+                    {autoStats.roundsPlayed}/{autoConfig.rounds} Rounds
                 </div>
-                <button onClick={stopAutoBet} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors">
-                    <StopCircle size={16} />
+                <button onClick={stopAutoBet} className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors ml-2">
+                    <StopCircle size={14} />
                 </button>
             </div>
         )}
@@ -257,7 +272,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({ onGameEnd, balance }) => {
 
         {/* Status Message */}
         <div className="h-8 z-10">
-            {message && <div className={`text-xl font-bold uppercase tracking-wider animate-pulse ${message.includes('WIN') ? 'text-green-600 dark:text-green-400' : 'text-lavender-600 dark:text-lavender-400'}`}>{message}</div>}
+            {message && <div className={`text-xl font-bold uppercase tracking-wider animate-pulse ${message.includes('Win') ? 'text-green-600 dark:text-green-400' : 'text-lavender-600 dark:text-lavender-400'}`}>{message}</div>}
         </div>
 
         {/* Betting Board */}

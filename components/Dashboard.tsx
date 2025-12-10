@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats } from '../types';
-import { TrendingUp, DollarSign, Award, ArrowRight, Wallet, ArrowDownCircle, ArrowUpCircle, Target, Star, Sparkles, CheckCircle2, Lock, Unlock, Gamepad2, Rocket, Dice5, ArrowUp } from 'lucide-react';
+import { TrendingUp, DollarSign, Award, ArrowRight, Wallet, ArrowDownCircle, ArrowUpCircle, Target, Sparkles, CheckCircle2, Lock, Unlock } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { PROMOTIONS } from '../constants';
 import { Link, useNavigate } from 'react-router-dom';
@@ -31,14 +31,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
   const isUnlocked = totalDeposits >= TARGET_DEPOSIT;
   const progressPercent = Math.min((totalDeposits / TARGET_DEPOSIT) * 100, 100);
   const remainingDeposit = Math.max(0, TARGET_DEPOSIT - totalDeposits);
-
-  const FEATURED_GAMES = [
-      { id: 'aviator', name: 'Aviator', link: '/aviator', color: 'bg-red-500', icon: <Rocket size={24} className="text-white"/>, sticker: '🔥 HOT' },
-      { id: 'blackjack', name: 'Blackjack', link: '/blackjack', color: 'bg-indigo-600', icon: <span className="text-2xl">🃏</span> },
-      { id: 'slots', name: 'Mega Slots', link: '/slots', color: 'bg-purple-600', icon: <span className="text-2xl">🎰</span> },
-      { id: 'dice', name: 'Neon Dice', link: '/dice', color: 'bg-blue-500', icon: <Dice5 size={24} className="text-white"/> },
-      { id: 'highlow', name: 'High-Low', link: '/highlow', color: 'bg-green-500', icon: <ArrowUp size={24} className="text-white"/> },
-  ];
 
   return (
     <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -129,35 +121,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
               </div>
            </div>
        </div>
-
-       {/* Featured Games Grid */}
-       <section aria-label="Featured Games">
-           <div className="flex items-center justify-between mb-4">
-                <h3 className="text-slate-800 dark:text-white font-bold text-xl flex items-center gap-2">
-                    <Gamepad2 className="text-lavender-600" size={20} />
-                    Featured Games
-                </h3>
-           </div>
-           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-               {FEATURED_GAMES.map((game) => (
-                   <Link 
-                        to={game.link} 
-                        key={game.id}
-                        className="group relative bg-white dark:bg-navy-800/50 p-4 rounded-2xl border border-slate-200 dark:border-white/5 hover:border-lavender-500 transition-all hover:-translate-y-1 hover:shadow-xl flex flex-col items-center justify-center gap-3"
-                   >
-                        {game.sticker && (
-                            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg animate-pulse z-10 uppercase tracking-wide">
-                                {game.sticker}
-                            </div>
-                        )}
-                        <div className={`w-14 h-14 ${game.color} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                            {game.icon}
-                        </div>
-                        <span className="font-bold text-slate-700 dark:text-white text-sm">{game.name}</span>
-                   </Link>
-               ))}
-           </div>
-       </section>
 
        {/* Celebrity Ambassador Section - Cristiano Ronaldo */}
        <section aria-label="Brand Ambassador Promotion" className="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-navy-900 border border-lavender-500/20 shadow-2xl group">
@@ -251,7 +214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
                              className="bg-white text-navy-900 hover:bg-lavender-50 font-bold py-4 px-8 rounded-full transition-all transform hover:scale-105 shadow-xl flex items-center gap-2"
                              aria-label="Claim the Bonus"
                            >
-                               <Star className="text-yellow-500 fill-yellow-500" size={20} />
+                               <Target className="text-yellow-500 fill-yellow-500" size={20} />
                                CLAIM $1000 BONUS
                            </button>
                       ) : (

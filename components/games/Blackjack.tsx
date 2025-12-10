@@ -289,18 +289,17 @@ export const Blackjack: React.FC<BlackjackProps> = ({ onGameEnd, balance }) => {
       
       {/* Auto Bet Overlay/Status */}
       {isAutoBetting && (
-          <div className="absolute top-4 left-4 right-4 bg-amber-500/10 border border-amber-500 rounded-xl p-3 flex justify-between items-center animate-pulse z-20">
+          <div className="absolute top-4 z-50 bg-amber-500/10 backdrop-blur-md border border-amber-500/50 rounded-full px-6 py-2 flex items-center gap-4 shadow-xl animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm">
-                  <Zap size={16} className="fill-current" />
-                  AUTO BET ACTIVE
+                  <Zap size={16} className="fill-current animate-pulse" />
+                  AUTO ACTIVE
               </div>
+              <div className="h-4 w-px bg-amber-500/30"></div>
               <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                  Rounds: {autoStats.roundsPlayed}/{autoConfig.rounds} | P/L: <span className={autoStats.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                      {autoStats.netProfit >= 0 ? '+' : ''}${autoStats.netProfit}
-                  </span>
+                  {autoStats.roundsPlayed}/{autoConfig.rounds} Rounds
               </div>
-              <button onClick={stopAutoBet} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors">
-                  <StopCircle size={16} />
+              <button onClick={stopAutoBet} className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors ml-2">
+                  <StopCircle size={14} />
               </button>
           </div>
       )}
@@ -422,7 +421,7 @@ export const Blackjack: React.FC<BlackjackProps> = ({ onGameEnd, balance }) => {
                                 className="w-28 bg-transparent text-center font-mono font-bold text-2xl text-lavender-600 dark:text-lavender-400 focus:outline-none pl-4 disabled:opacity-50"
                             />
                         </div>
-                        <button onClick={() => handleBetChange(10)} disabled={isAutoBetting} className="w-12 h-12 flex items-center justify-center text-slate-700 dark:text-white hover:text-lavender-600 dark:hover:text-lavender-400 hover:bg-black/5 dark:hover:bg-white/10 rounded text-xl disabled:opacity-30">+</button>
+                        <button onClick={() => handleBetChange(10)} disabled={isAutoBetting} className="w-12 h-12 flex items-center justify-center text-slate-700 dark:text-white hover:text-slate-600 dark:hover:text-lavender-400 hover:bg-black/5 dark:hover:bg-white/10 rounded text-xl disabled:opacity-30">+</button>
                     </div>
                     
                     {/* Quick Bet Buttons */}
@@ -469,8 +468,8 @@ export const Blackjack: React.FC<BlackjackProps> = ({ onGameEnd, balance }) => {
           ) : (
               <div className="flex gap-4">
                   {isAutoBetting ? (
-                      <div className="bg-slate-800 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 border border-white/10">
-                          <Zap size={18} className="animate-bounce text-yellow-400"/> Auto Playing...
+                      <div className="bg-slate-800 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 border border-white/10 animate-pulse">
+                          <Zap size={18} className="text-amber-400 fill-current"/> Auto Playing...
                       </div>
                   ) : (
                       <>

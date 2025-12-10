@@ -3,7 +3,7 @@ import { SLOT_SYMBOLS, MIN_BET, MAX_BET } from '../../constants';
 import { SlotSymbol } from '../../types';
 import confetti from 'canvas-confetti';
 import { playSound } from '../../utils/audio';
-import { Settings2, StopCircle, PlayCircle, Zap, RotateCcw } from 'lucide-react';
+import { Settings2, StopCircle, PlayCircle, Zap, RotateCcw, X } from 'lucide-react';
 
 interface SlotMachineProps {
   onGameEnd: (amount: number) => void;
@@ -28,12 +28,24 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
   const [autoConfig, setAutoConfig] = useState<AutoBetConfig>({ rounds: 10, stopProfit: 0, stopLoss: 0 });
   const [autoStats, setAutoStats] = useState({ roundsPlayed: 0, initialBalance: 0, netProfit: 0 });
 
+  // Refs for tracking intervals/timeouts for cleanup
+  const spinIntervalRef = useRef<number | null>(null);
+  const autoLoopTimeoutRef = useRef<number | null>(null);
+
   // Ref to hold current state for the auto loop
   const autoStateRef = useRef({ isAutoBetting, autoConfig, autoStats, balance });
 
   useEffect(() => {
     autoStateRef.current = { isAutoBetting, autoConfig, autoStats, balance };
   }, [isAutoBetting, autoConfig, autoStats, balance]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+      if (autoLoopTimeoutRef.current) clearTimeout(autoLoopTimeoutRef.current);
+    };
+  }, []);
 
   const spinReel = () => {
     return SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
@@ -82,6 +94,7 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
   const stopAutoBet = () => {
       setIsAutoBetting(false);
       setMessage("AUTO STOPPED");
+      if (autoLoopTimeoutRef.current) clearTimeout(autoLoopTimeoutRef.current);
   };
 
   const handleSpin = (isAutoTrigger = false) => {
@@ -106,14 +119,18 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
 
     // Simulate spinning delay
     let spins = 0;
-    const intervalId = setInterval(() => {
+    // Clear any existing interval just in case
+    if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+
+    spinIntervalRef.current = window.setInterval(() => {
       setReels([spinReel(), spinReel(), spinReel()]);
       spins++;
       // Reel sound on every tick for speed effect
       playSound('slot-reel'); 
       
       if (spins > 20) {
-        clearInterval(intervalId);
+        if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+        spinIntervalRef.current = null;
         finishSpin();
       }
     }, 80); // Faster spin (80ms)
@@ -154,7 +171,7 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
     const { isAutoBetting: currentAuto, autoConfig: config, autoStats: stats, balance: currentBalance } = autoStateRef.current;
     
     if (currentAuto) {
-        setTimeout(() => {
+        autoLoopTimeoutRef.current = window.setTimeout(() => {
              // Re-check state after delay (user might have stopped)
              if (!autoStateRef.current.isAutoBetting) return;
 
@@ -188,34 +205,34 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-slate-900 dark:bg-gradient-to-b dark:from-navy-900 dark:to-black rounded-[2rem] border-4 border-lavender-500/50 shadow-[0_0_50px_rgba(167,139,250,0.3)] max-w-2xl mx-auto w-full relative overflow-hidden transition-colors duration-300">
+    <div className="flex flex-col items-center justify-center p-6 bg-slate-900 dark:bg-gradient-to-b dark:from-navy-900 dark:to-black rounded-[2rem] border-4 border-lavender-500/50 shadow-[0_0_50px_rgba(167,139,250,0.3)] max-w-2xl mx-auto w-full relative overflow-visible transition-colors duration-300">
       
-      {/* Auto Bet Overlay */}
+      {/* Auto Bet Status Indicator - REPOSITIONED to top right corner */}
       {isAutoBetting && (
-          <div className="absolute top-16 left-4 right-4 bg-amber-500/10 border border-amber-500 rounded-xl p-2 flex justify-between items-center animate-pulse z-30">
-              <div className="flex items-center gap-2 text-amber-500 font-bold text-xs">
-                  <Zap size={12} className="fill-current" /> AUTO ON
+          <div className="absolute top-4 right-4 z-50 bg-amber-500/10 backdrop-blur-md border border-amber-500/50 rounded-xl px-4 py-2 flex flex-col items-end animate-in fade-in slide-in-from-right-2 shadow-xl">
+              <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-wider">
+                  <Zap size={14} className="fill-current animate-pulse" /> AUTO SPIN
               </div>
-              <div className="text-[10px] font-mono text-gray-300">
-                  {autoStats.roundsPlayed}/{autoConfig.rounds} | <span className={autoStats.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}>
+              <div className="text-[10px] font-mono text-gray-300 mt-1">
+                  Run: <span className="text-white">{autoStats.roundsPlayed}/{autoConfig.rounds}</span>
+              </div>
+              <div className="text-[10px] font-mono">
+                  P/L: <span className={autoStats.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}>
                       {autoStats.netProfit >= 0 ? '+' : ''}${autoStats.netProfit}
                   </span>
               </div>
-              <button onClick={stopAutoBet} className="bg-red-600 text-white p-1 rounded-full hover:bg-red-500">
-                  <StopCircle size={12} />
-              </button>
           </div>
       )}
 
       {/* Decorative Lights */}
-      <div className="absolute top-3 w-full flex justify-between px-6">
+      <div className="absolute top-3 w-full flex justify-between px-6 pointer-events-none">
         <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_red]"></div>
         <div className="w-3 h-3 rounded-full bg-lavender-400 animate-pulse delay-75 shadow-[0_0_8px_#a78bfa]"></div>
         <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse delay-150 shadow-[0_0_8px_blue]"></div>
         <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse delay-300 shadow-[0_0_8px_green]"></div>
       </div>
 
-      <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-lavender-300 via-lavender-500 to-indigo-400 mb-6 tracking-tighter drop-shadow-xl mt-2">
+      <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-lavender-300 via-lavender-500 to-indigo-400 mb-6 tracking-tighter drop-shadow-xl mt-2 text-center">
         MEGA SLOTS
       </div>
 
@@ -240,29 +257,37 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({ onGameEnd, balance }) 
       {/* Controls - Compact */}
       <div className="flex flex-col md:flex-row items-center gap-6 w-full justify-center relative">
           
-          {/* Auto Bet Config Modal */}
+          {/* Auto Bet Config Modal - Improved Positioning */}
           {showAutoSettings && !isAutoBetting && (
-              <div className="absolute bottom-full mb-4 bg-navy-900 border border-amber-500 rounded-xl p-4 shadow-2xl w-64 z-40 animate-in zoom-in slide-in-from-bottom-2">
-                  <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-bold text-white flex items-center gap-2 text-sm"><Settings2 size={14}/> Auto Spin Config</h4>
-                      <button onClick={() => setShowAutoSettings(false)} className="text-gray-400 hover:text-white"><StopCircle size={16}/></button>
-                  </div>
-                  <div className="space-y-2">
-                      <div>
-                          <label className="text-[10px] font-bold text-gray-400 uppercase">Spins</label>
-                          <input type="number" value={autoConfig.rounds} onChange={(e) => setAutoConfig({...autoConfig, rounds: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+              <div className="absolute bottom-28 z-50 animate-in zoom-in slide-in-from-bottom-5 fade-in w-72">
+                  <div className="bg-navy-900 border border-amber-500/50 rounded-xl p-5 shadow-2xl relative">
+                      {/* Triangle pointer */}
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-navy-900 border-r border-b border-amber-500/50 rotate-45 transform"></div>
+                      
+                      <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
+                          <h4 className="font-bold text-white flex items-center gap-2 text-sm uppercase"><Settings2 size={14} className="text-amber-400"/> Auto Spin Config</h4>
+                          <button onClick={() => setShowAutoSettings(false)} className="text-gray-400 hover:text-white transition-colors"><X size={16}/></button>
                       </div>
-                      <div>
-                          <label className="text-[10px] font-bold text-green-400 uppercase">Stop Profit</label>
-                          <input type="number" value={autoConfig.stopProfit} onChange={(e) => setAutoConfig({...autoConfig, stopProfit: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                      <div className="space-y-3">
+                          <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase">Spins</label>
+                              <input type="number" value={autoConfig.rounds} onChange={(e) => setAutoConfig({...autoConfig, rounds: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:border-amber-500 focus:outline-none" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                             <div>
+                                  <label className="text-[10px] font-bold text-green-400 uppercase">Stop Profit</label>
+                                  <input type="number" value={autoConfig.stopProfit} onChange={(e) => setAutoConfig({...autoConfig, stopProfit: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-green-500/30 rounded px-2 py-1.5 text-xs text-white focus:border-green-500 focus:outline-none" />
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-bold text-red-400 uppercase">Stop Loss</label>
+                                  <input type="number" value={autoConfig.stopLoss} onChange={(e) => setAutoConfig({...autoConfig, stopLoss: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-red-500/30 rounded px-2 py-1.5 text-xs text-white focus:border-red-500 focus:outline-none" />
+                              </div>
+                          </div>
+                          
+                          <button onClick={startAutoBet} className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-2.5 rounded mt-2 text-xs flex items-center justify-center gap-2 shadow-lg">
+                              <PlayCircle size={14} /> START AUTO
+                          </button>
                       </div>
-                      <div>
-                          <label className="text-[10px] font-bold text-red-400 uppercase">Stop Loss</label>
-                          <input type="number" value={autoConfig.stopLoss} onChange={(e) => setAutoConfig({...autoConfig, stopLoss: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-white" />
-                      </div>
-                      <button onClick={startAutoBet} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 rounded mt-2 text-xs flex items-center justify-center gap-2">
-                          <PlayCircle size={12} /> START AUTO
-                      </button>
                   </div>
               </div>
           )}

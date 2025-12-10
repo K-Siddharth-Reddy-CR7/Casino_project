@@ -219,18 +219,17 @@ export const HighLow: React.FC<HighLowProps> = ({ onGameEnd, balance }) => {
         
         {/* Auto Bet Overlay */}
         {isAutoBetting && (
-            <div className="absolute top-4 left-4 right-4 bg-amber-500/10 border border-amber-500 rounded-xl p-3 flex justify-between items-center animate-pulse z-30">
+            <div className="absolute top-4 z-50 bg-amber-500/10 backdrop-blur-md border border-amber-500/50 rounded-full px-6 py-2 flex items-center gap-4 shadow-xl animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-sm">
-                    <Zap size={16} className="fill-current" />
+                    <Zap size={16} className="fill-current animate-pulse" />
                     AUTO PLAYING
                 </div>
+                <div className="h-4 w-px bg-amber-500/30"></div>
                 <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                    Rounds: {autoStats.roundsPlayed}/{autoConfig.rounds} | P/L: <span className={autoStats.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                        {autoStats.netProfit >= 0 ? '+' : ''}${autoStats.netProfit}
-                    </span>
+                    {autoStats.roundsPlayed}/{autoConfig.rounds} Rounds
                 </div>
-                <button onClick={stopAutoBet} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors">
-                    <StopCircle size={16} />
+                <button onClick={stopAutoBet} className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors ml-2">
+                    <StopCircle size={14} />
                 </button>
             </div>
         )}
