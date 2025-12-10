@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlayerStats } from '../types';
-import { TrendingUp, DollarSign, Award, ArrowRight, Wallet, ArrowDownCircle, ArrowUpCircle, Target, Sparkles, CheckCircle2, Lock, Unlock } from 'lucide-react';
+import { TrendingUp, DollarSign, Award, ArrowRight, Wallet, ArrowDownCircle, ArrowUpCircle, Target, Sparkles, CheckCircle2, Lock, Unlock, AlertTriangle, X, LogIn } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import { PROMOTIONS } from '../constants';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,6 +13,18 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdraw }) => {
   const navigate = useNavigate();
+  const [showDemoLock, setShowDemoLock] = useState(false);
+
+  // Check if current user is a demo user
+  const isDemoUser = stats.user.email.endsWith('@neonvegas.demo');
+
+  const handleBankingNavigation = (tab: 'deposit' | 'withdrawal') => {
+    if (isDemoUser) {
+        setShowDemoLock(true);
+    } else {
+        navigate(`/banking?tab=${tab}`);
+    }
+  };
 
   const getPromoLink = (id: string) => {
     switch (id) {
@@ -33,13 +45,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
   const remainingDeposit = Math.max(0, TARGET_DEPOSIT - totalDeposits);
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
        
+       {/* Demo Lock Modal */}
+       {showDemoLock && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+             <div className="bg-white dark:bg-navy-900 border border-slate-200 dark:border-white/10 rounded-2xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+                 <button 
+                    onClick={() => setShowDemoLock(false)}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
+                 >
+                     <X size={20} />
+                 </button>
+                 
+                 <div className="flex flex-col items-center text-center">
+                     <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4 text-amber-500">
+                         <Lock size={32} />
+                     </div>
+                     <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Feature Locked</h3>
+                     <p className="text-slate-500 dark:text-gray-400 mb-6 leading-relaxed">
+                         Banking features like Deposits and Withdrawals are disabled in <span className="font-bold text-amber-500">Demo Mode</span>.
+                         <br/><br/>
+                         Please log out and create a real account to manage real funds.
+                     </p>
+                     <div className="flex gap-3 w-full">
+                         <button 
+                            onClick={() => setShowDemoLock(false)}
+                            className="flex-1 py-3 rounded-xl font-bold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                         >
+                             Dismiss
+                         </button>
+                         {/* We redirect to home which typically holds the logout button in sidebar, or user can click logout manually */}
+                         <button 
+                            onClick={() => window.location.reload()} // Quick way to reset to auth screen in this architecture
+                            className="flex-1 py-3 rounded-xl font-bold bg-lavender-600 hover:bg-lavender-700 text-white shadow-lg flex items-center justify-center gap-2"
+                         >
+                             <LogIn size={18} /> Login
+                         </button>
+                     </div>
+                 </div>
+             </div>
+         </div>
+       )}
+
        {/* Hero Section */}
        <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
           <div>
             <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-2">Hello, <span className="text-lavender-600 dark:text-lavender-400">{stats.user.username}</span></h1>
-            <p className="text-slate-500 dark:text-gray-400">Your account overview and active tables.</p>
+            <p className="text-slate-500 dark:text-gray-400">
+                {isDemoUser ? (
+                    <span className="flex items-center gap-2 text-amber-500 font-bold bg-amber-100 dark:bg-amber-900/20 px-2 py-1 rounded-md w-fit text-xs uppercase tracking-wider">
+                        <AlertTriangle size={12}/> Demo Mode Active
+                    </span>
+                ) : (
+                    "Your account overview and active tables."
+                )}
+            </p>
           </div>
        </div>
 
@@ -58,23 +119,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
                   <span className="text-5xl font-black text-white tracking-tight" aria-label={`Balance: ${stats.balance} dollars`}>
                       ${stats.balance.toLocaleString()}
                   </span>
+                  {isDemoUser && <span className="text-xs font-bold text-amber-400 uppercase border border-amber-400/50 px-1 rounded">Demo Credits</span>}
               </div>
               
               {/* Action Buttons */}
               <div className="flex gap-4 z-10 relative">
                   <button 
-                    onClick={() => navigate('/banking?tab=deposit')}
+                    onClick={() => handleBankingNavigation('deposit')}
                     className="flex-1 bg-lavender-500 hover:bg-lavender-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-lavender-500/20"
                     aria-label="Deposit Funds"
                   >
-                      <ArrowDownCircle size={18} /> Deposit
+                      {isDemoUser ? <Lock size={18} className="opacity-50"/> : <ArrowDownCircle size={18} />} Deposit
                   </button>
                   <button 
-                    onClick={() => navigate('/banking?tab=withdrawal')}
+                    onClick={() => handleBankingNavigation('withdrawal')}
                     className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all border border-white/10"
                     aria-label="Withdraw Funds"
                   >
-                      <ArrowUpCircle size={18} /> Withdraw
+                      {isDemoUser ? <Lock size={18} className="opacity-50"/> : <ArrowUpCircle size={18} />} Withdraw
                   </button>
               </div>
 
@@ -219,11 +281,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onDeposit, onWithdr
                            </button>
                       ) : (
                           <button 
-                            onClick={() => navigate('/banking?tab=deposit')}
+                            onClick={() => handleBankingNavigation('deposit')}
                             className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold py-4 px-8 rounded-full transition-all flex items-center gap-2"
                             aria-label="Deposit to Unlock"
                           >
-                              <Lock size={18} />
+                              {isDemoUser ? <Lock size={18} /> : <ArrowDownCircle size={18} />}
                               DEPOSIT TO UNLOCK
                           </button>
                       )}

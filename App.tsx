@@ -68,6 +68,8 @@ const App: React.FC = () => {
         user: { username: 'Player', email: '' }
   });
 
+  const isDemoUser = stats.user.email.endsWith('@neonvegas.demo');
+
   // --- Theme Logic ---
   useEffect(() => {
     const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
@@ -392,7 +394,9 @@ const App: React.FC = () => {
                             <nav className="flex-1 px-4 space-y-2">
                                 <NavLink to="/" icon={<LayoutDashboard size={20}/>} label="Dashboard" />
                                 <NavLink to="/statement" icon={<FileText size={20}/>} label="Statement" />
-                                <NavLink to="/banking" icon={<CreditCard size={20}/>} label="Banking" />
+                                {!isDemoUser && (
+                                    <NavLink to="/banking" icon={<CreditCard size={20}/>} label="Banking" />
+                                )}
                                 <div className="pt-6 pb-2 px-4 text-xs font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest">Games</div>
                                 <NavLink to="/blackjack" icon={<span className="text-xl">🃏</span>} label="Blackjack" />
                                 <NavLink to="/slots" icon={<span className="text-xl">🎰</span>} label="Mega Slots" />
@@ -456,6 +460,7 @@ const App: React.FC = () => {
                                             balance={stats.balance} 
                                             savedBankDetails={stats.user.savedBankDetails}
                                             onRequestTransaction={handleBankingRequest} 
+                                            isDemo={isDemoUser}
                                         />
                                     } />
                                     <Route path="/blackjack" element={
@@ -511,7 +516,9 @@ const App: React.FC = () => {
                         {/* Mobile Nav Bar (Bottom) */}
                         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1020] border-t border-slate-200 dark:border-white/10 flex justify-around p-4 z-40 pb-6 transition-colors duration-300">
                             <Link to="/" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><LayoutDashboard /></Link>
-                            <Link to="/banking" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><CreditCard /></Link>
+                            {!isDemoUser && (
+                                <Link to="/banking" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><CreditCard /></Link>
+                            )}
                             <Link to="/blackjack" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><span className="text-xl">🃏</span></Link>
                             <Link to="/aviator" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><Rocket /></Link>
                         </div>

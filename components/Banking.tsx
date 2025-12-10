@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BankDetails } from '../types';
-import { CreditCard, Landmark, ArrowDownCircle, ArrowUpCircle, History, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { CreditCard, Landmark, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2, Lock, LogOut } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
 
 interface BankingProps {
   balance: number;
   savedBankDetails?: BankDetails;
   onRequestTransaction: (type: 'deposit' | 'withdrawal', amount: number, details: any) => void;
+  isDemo: boolean;
 }
 
-export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onRequestTransaction }) => {
+export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onRequestTransaction, isDemo }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Initialize from URL or default to deposit
@@ -97,6 +98,48 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
     setAmount('');
     setTxRef('');
   };
+
+  if (isDemo) {
+      return (
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8 animate-in fade-in zoom-in duration-500">
+              <div className="w-32 h-32 bg-slate-100 dark:bg-navy-800 rounded-full flex items-center justify-center shadow-inner border border-slate-200 dark:border-white/5 relative">
+                  <div className="absolute inset-0 bg-amber-500/10 rounded-full animate-pulse"></div>
+                  <Lock size={64} className="text-slate-400 dark:text-slate-500 relative z-10" />
+                  <div className="absolute -bottom-2 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white dark:border-navy-900">
+                      DEMO MODE
+                  </div>
+              </div>
+              
+              <div>
+                  <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">Banking Unavailable</h2>
+                  <p className="text-slate-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+                      Real-money banking features, including Deposits and Withdrawals, are disabled in <span className="font-bold text-amber-500">Demo Mode</span>.
+                  </p>
+              </div>
+
+              <div className="p-6 bg-slate-50 dark:bg-navy-900/50 rounded-2xl border border-slate-200 dark:border-white/10 max-w-sm w-full">
+                  <p className="text-xs text-slate-500 dark:text-gray-500 mb-4 font-mono">Create a full account to unlock:</p>
+                  <ul className="text-sm text-left space-y-3 mb-6">
+                      <li className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
+                          <CheckCircle2 size={16} className="text-green-500" /> Secure Deposits
+                      </li>
+                      <li className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
+                          <CheckCircle2 size={16} className="text-green-500" /> Fast Withdrawals
+                      </li>
+                      <li className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
+                          <CheckCircle2 size={16} className="text-green-500" /> Transaction History
+                      </li>
+                  </ul>
+                  <button 
+                      onClick={() => window.location.reload()} 
+                      className="w-full bg-lavender-600 hover:bg-lavender-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg"
+                  >
+                      <LogOut size={18} /> Logout to Register
+                  </button>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
