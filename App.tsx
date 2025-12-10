@@ -398,7 +398,7 @@ const App: React.FC = () => {
                                 <NavLink to="/slots" icon={<span className="text-xl">🎰</span>} label="Mega Slots" />
                                 <NavLink to="/dice" icon={<span className="text-xl">🎲</span>} label="Neon Dice" />
                                 <NavLink to="/highlow" icon={<span className="text-xl">🔼</span>} label="High-Low" />
-                                <NavLink to="/aviator" icon={<Rocket size={20} />} label="Aviator" />
+                                <NavLink to="/aviator" icon={<span className="text-xl">🚀</span>} label="Aviator" />
                             </nav>
 
                             <div className="p-6 border-t border-slate-200 dark:border-white/5 space-y-4">
