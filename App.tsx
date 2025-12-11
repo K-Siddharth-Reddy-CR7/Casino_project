@@ -13,7 +13,9 @@ import { Statement } from './components/Statement';
 import { AdminPanel } from './components/AdminPanel';
 import { Auth } from './components/Auth';
 import { Banking } from './components/Banking';
-import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, ArrowLeft, CreditCard, Rocket } from 'lucide-react';
+import { ForgotPassword } from './components/ForgotPassword';
+import { MyAccount } from './components/MyAccount';
+import { LayoutDashboard, Menu, ShieldCheck, LogOut, FileText, Sun, Moon, ArrowLeft, CreditCard, Rocket, User } from 'lucide-react';
 
 const STORAGE_KEY_USERS = 'neon_vegas_users';
 const STORAGE_KEY_SESSION = 'neon_vegas_session';
@@ -307,6 +309,23 @@ const App: React.FC = () => {
     });
   };
 
+  const handleUpdateUserProfile = (updatedProfile: UserProfile) => {
+      // Update local state
+      setStats(prev => ({
+          ...prev,
+          user: updatedProfile
+      }));
+
+      // Update DB
+      if (currentUserEmail) {
+          const db = getDB();
+          if (db[currentUserEmail]) {
+              db[currentUserEmail].profile = updatedProfile;
+              localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(db));
+          }
+      }
+  };
+
   // --- Game Logic ---
 
   const updateBalance = (amount: number, gameName: string = 'Game') => {
@@ -375,6 +394,7 @@ const App: React.FC = () => {
         
         <Routes>
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="*" element={
                 !isAuthenticated ? (
                     <Auth onLogin={handleLogin} onSignup={handleSignup} onDemoLogin={handleDemoLogin} />
@@ -396,6 +416,9 @@ const App: React.FC = () => {
                                 <NavLink to="/statement" icon={<FileText size={20}/>} label="Statement" />
                                 {!isDemoUser && (
                                     <NavLink to="/banking" icon={<CreditCard size={20}/>} label="Banking" />
+                                )}
+                                {!isDemoUser && (
+                                    <NavLink to="/account" icon={<User size={20}/>} label="My Account" />
                                 )}
                                 <div className="pt-6 pb-2 px-4 text-xs font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest">Games</div>
                                 <NavLink to="/blackjack" icon={<span className="text-xl">🃏</span>} label="Blackjack" />
@@ -463,6 +486,12 @@ const App: React.FC = () => {
                                             isDemo={isDemoUser}
                                         />
                                     } />
+                                    <Route path="/account" element={
+                                        <MyAccount 
+                                            user={stats.user} 
+                                            onUpdateProfile={handleUpdateUserProfile} 
+                                        />
+                                    } />
                                     <Route path="/blackjack" element={
                                         <div className="animate-in fade-in zoom-in duration-500">
                                             <div className="mb-8 text-center">
@@ -517,7 +546,7 @@ const App: React.FC = () => {
                         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#0a1020] border-t border-slate-200 dark:border-white/10 flex justify-around p-4 z-40 pb-6 transition-colors duration-300">
                             <Link to="/" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><LayoutDashboard /></Link>
                             {!isDemoUser && (
-                                <Link to="/banking" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><CreditCard /></Link>
+                                <Link to="/account" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><User /></Link>
                             )}
                             <Link to="/blackjack" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><span className="text-xl">🃏</span></Link>
                             <Link to="/aviator" className="text-slate-400 dark:text-gray-400 hover:text-lavender-600 dark:hover:text-lavender-400 p-2"><Rocket /></Link>

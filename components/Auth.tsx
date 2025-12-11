@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, ArrowRight, Mail, AlertCircle, Gamepad2 } from 'lucide-react';
+import { User, Lock, ArrowRight, Mail, AlertCircle, Gamepad2, Eye, EyeOff } from 'lucide-react';
 import { UserProfile } from '../types';
 import { Link } from 'react-router-dom';
 
@@ -15,6 +15,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, onDemoLogin }) =>
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +25,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, onDemoLogin }) =>
   };
 
   const validatePassword = (pwd: string) => {
-    // Min 8 chars, at least 1 number
-    return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(pwd);
+    // Min 8 chars, no specific complexity requirement
+    return pwd.length >= 8;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,7 +39,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, onDemoLogin }) =>
         return;
     }
     if (!validatePassword(password)) {
-        setError("Password must be at least 8 characters and contain a number.");
+        setError("Password must be at least 8 characters.");
         return;
     }
     if (!isLogin && username.length < 3) {
@@ -138,13 +139,29 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onSignup, onDemoLogin }) =>
                     <Lock size={18} />
                   </div>
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-navy-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-slate-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-lavender-500 focus:ring-1 focus:ring-lavender-500 transition-all"
-                    placeholder="Min 8 chars, 1 number"
+                    className="w-full bg-slate-50 dark:bg-navy-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-10 text-slate-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-lavender-500 focus:ring-1 focus:ring-lavender-500 transition-all"
+                    placeholder="Min 8 chars"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-lavender-500 dark:hover:text-lavender-400 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
+                {/* Forgot Password Link */}
+                {isLogin && (
+                    <div className="flex justify-end">
+                        <Link to="/forgot-password" className="text-xs font-bold text-lavender-600 dark:text-lavender-400 hover:underline">
+                            Forgot Password?
+                        </Link>
+                    </div>
+                )}
               </div>
 
               <button 

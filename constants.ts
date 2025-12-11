@@ -4,6 +4,15 @@ export const INITIAL_BALANCE = 0;
 export const MIN_BET = 1;
 export const MAX_BET = 1000;
 export const ADMIN_SECRET_KEY = 'ksr';
+export const DEFAULT_RESET_PASSWORD = 'NeonUser2025!';
+export const STORAGE_KEY_RESETS = 'neon_vegas_reset_requests';
+
+export const DEFAULT_SYSTEM_BANK = {
+  bankName: 'Citi Bank',
+  accountHolder: 'VSG',
+  accountNumber: '1232344324',
+  routingNumber: 'CIB19072'
+};
 
 export const SLOT_SYMBOLS: SlotSymbol[] = [
   { id: 'cherry', icon: '🍒', value: 2, color: 'text-red-500' },

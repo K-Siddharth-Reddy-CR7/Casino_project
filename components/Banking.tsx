@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BankDetails } from '../types';
-import { CreditCard, Landmark, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2, Lock, LogOut } from 'lucide-react';
+import { CreditCard, Landmark, ArrowDownCircle, ArrowUpCircle, AlertCircle, CheckCircle2, Lock, LogOut, Copy } from 'lucide-react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { DEFAULT_SYSTEM_BANK } from '../constants';
 
 interface BankingProps {
   balance: number;
@@ -44,6 +45,9 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
 
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
+  // System Receiver Bank
+  const [receiverBank, setReceiverBank] = useState<BankDetails>(DEFAULT_SYSTEM_BANK);
+
   useEffect(() => {
     if (savedBankDetails) {
       setBankName(savedBankDetails.bankName || '');
@@ -52,6 +56,16 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
       setRoutingNumber(savedBankDetails.routingNumber || '');
     }
   }, [savedBankDetails]);
+
+  // Load System Bank Details for Deposit
+  useEffect(() => {
+      if (activeTab === 'deposit') {
+          const sysBank = localStorage.getItem('neon_vegas_system_bank');
+          if (sysBank) {
+              setReceiverBank(JSON.parse(sysBank));
+          }
+      }
+  }, [activeTab]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,6 +214,32 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
                    {activeTab === 'deposit' ? 'Deposit Request' : 'Withdrawal Request'}
                </h3>
 
+               {/* System Bank Details Display for Deposit */}
+               {activeTab === 'deposit' && (
+                   <div className="mb-8 bg-slate-100 dark:bg-navy-800 rounded-xl p-5 border border-slate-200 dark:border-white/10 relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 p-3 opacity-10">
+                           <Landmark size={80} className="text-slate-900 dark:text-white"/>
+                       </div>
+                       <h4 className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">
+                           <Landmark size={14}/> Transfer Funds Here
+                       </h4>
+                       <div className="space-y-1 relative z-10">
+                           <div className="flex justify-between items-end">
+                               <div>
+                                   <p className="text-sm font-bold text-slate-900 dark:text-white">{receiverBank.bankName}</p>
+                                   <p className="text-xs text-slate-500 dark:text-gray-400">Account Name: {receiverBank.accountHolder}</p>
+                               </div>
+                               <div className="text-right">
+                                   <p className="font-mono text-lg font-bold text-lavender-600 dark:text-lavender-400 tracking-wider">
+                                       {receiverBank.accountNumber}
+                                   </p>
+                                   <p className="text-[10px] text-slate-400 font-mono">IFSC: {receiverBank.routingNumber}</p>
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+               )}
+
                {message && (
                    <div className={`p-4 rounded-xl mb-6 flex items-start gap-3 ${
                        message.type === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -234,13 +274,13 @@ export const Banking: React.FC<BankingProps> = ({ balance, savedBankDetails, onR
                                className="w-full bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-slate-900 dark:text-white focus:outline-none focus:border-lavender-500 focus:ring-1 focus:ring-lavender-500"
                                placeholder="e.g. 1234567890"
                            />
-                           <p className="text-xs text-slate-400 mt-1">Please transfer funds to our admin account and enter the reference ID here.</p>
+                           <p className="text-xs text-slate-400 mt-1">Please transfer funds to our admin account above and enter the reference ID here.</p>
                        </div>
                    )}
 
                    <div className="pt-6 border-t border-slate-200 dark:border-white/10">
                        <h4 className="text-sm font-bold text-slate-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                           <Landmark size={18} /> Bank Details {activeTab === 'deposit' ? '(Your Account)' : '(For Payout)'}
+                           <Landmark size={18} /> {activeTab === 'deposit' ? 'Your Bank Details (Sender)' : 'Bank Details (For Payout)'}
                        </h4>
                        
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

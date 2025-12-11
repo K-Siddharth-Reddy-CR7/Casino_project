@@ -71,3 +71,10 @@ export interface Promotion {
   gradient: string;
   action: string;
 }
+
+export interface PasswordResetRequest {
+    id: string;
+    email: string;
+    date: string;
+    status: 'pending' | 'approved' | 'rejected';
+}

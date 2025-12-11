@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ADMIN_SECRET_KEY } from '../constants';
-import { PlayerStats, UserProfile, Transaction } from '../types';
-import { Shield, Lock, Database, Search, User, CreditCard, Activity, X, Eye, ArrowLeft, CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
+import { ADMIN_SECRET_KEY, DEFAULT_SYSTEM_BANK, STORAGE_KEY_RESETS } from '../constants';
+import { PlayerStats, UserProfile, Transaction, BankDetails, PasswordResetRequest } from '../types';
+import { Shield, Lock, Database, Search, User, CreditCard, Activity, X, Eye, ArrowLeft, CheckCircle, XCircle, Clock, FileText, Settings, Save, ShieldAlert, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DatabaseRecord {
@@ -12,6 +12,7 @@ interface DatabaseRecord {
 export const AdminPanel: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accessKey, setAccessKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState('');
   const [dbData, setDbData] = useState<DatabaseRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,6 +20,13 @@ export const AdminPanel: React.FC = () => {
 
   // Pending Transactions State
   const [pendingTx, setPendingTx] = useState<{userEmail: string, tx: Transaction}[]>([]);
+  
+  // Pending Password Resets
+  const [pendingResets, setPendingResets] = useState<PasswordResetRequest[]>([]);
+
+  // System Config State
+  const [systemBank, setSystemBank] = useState<BankDetails>(DEFAULT_SYSTEM_BANK);
+  const [configMessage, setConfigMessage] = useState('');
 
   // Load Data from LocalStorage
   const loadDB = () => {
@@ -40,6 +48,20 @@ export const AdminPanel: React.FC = () => {
         });
         setPendingTx(pending);
       }
+
+      // Load System Bank Details
+      const bankData = localStorage.getItem('neon_vegas_system_bank');
+      if (bankData) {
+          setSystemBank(JSON.parse(bankData));
+      }
+
+      // Load Reset Requests
+      const resetsRaw = localStorage.getItem(STORAGE_KEY_RESETS);
+      if (resetsRaw) {
+          const resets: PasswordResetRequest[] = JSON.parse(resetsRaw);
+          setPendingResets(resets.filter(r => r.status === 'pending'));
+      }
+
     } catch (e) {
       console.error("Failed to load DB", e);
     }
@@ -59,6 +81,12 @@ export const AdminPanel: React.FC = () => {
     } else {
       setError('Invalid Security Key. Access Denied.');
     }
+  };
+
+  const handleSaveSystemBank = () => {
+      localStorage.setItem('neon_vegas_system_bank', JSON.stringify(systemBank));
+      setConfigMessage('Bank details updated successfully.');
+      setTimeout(() => setConfigMessage(''), 3000);
   };
 
   // Transaction Actions
@@ -131,6 +159,38 @@ export const AdminPanel: React.FC = () => {
       }
   };
 
+  const handleResetAction = (requestId: string, userEmail: string, action: 'approve' | 'reject') => {
+      try {
+          // 1. Update Request Status
+          const resetsRaw = localStorage.getItem(STORAGE_KEY_RESETS);
+          const resets: PasswordResetRequest[] = resetsRaw ? JSON.parse(resetsRaw) : [];
+          const reqIndex = resets.findIndex(r => r.id === requestId);
+          
+          if (reqIndex !== -1) {
+              resets[reqIndex].status = action === 'approve' ? 'approved' : 'rejected';
+              localStorage.setItem(STORAGE_KEY_RESETS, JSON.stringify(resets));
+          }
+
+          // 2. If approved, reset user password in DB
+          if (action === 'approve') {
+              const rawData = localStorage.getItem('neon_vegas_users');
+              if (rawData) {
+                  const db = JSON.parse(rawData);
+                  const userRecord = db[userEmail];
+                  if (userRecord) {
+                      // Change password to EMAIL as requested
+                      userRecord.profile.password = userEmail;
+                      localStorage.setItem('neon_vegas_users', JSON.stringify(db));
+                  }
+              }
+          }
+
+          loadDB();
+      } catch (e) {
+          console.error("Reset Action Failed", e);
+      }
+  };
+
   const filteredUsers = dbData.filter(record => 
     record.profile.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
     record.profile.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -157,12 +217,19 @@ export const AdminPanel: React.FC = () => {
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 text-slate-500" size={18} />
                 <input 
-                  type="password" 
+                  type={showKey ? "text" : "password"} 
                   value={accessKey}
                   onChange={(e) => setAccessKey(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white font-mono focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder-slate-600"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-10 pr-10 text-white font-mono focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder-slate-600"
                   placeholder="Enter Security Key"
                 />
+                <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-3.5 text-slate-500 hover:text-red-400 transition-colors"
+                >
+                    {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
               {error && <p className="text-red-500 text-xs font-mono text-center animate-pulse">{error}</p>}
               <button 
@@ -238,7 +305,7 @@ export const AdminPanel: React.FC = () => {
            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
               <div>
                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Pending Requests</p>
-                 <h2 className="text-3xl font-black text-slate-900 dark:text-white">{pendingTx.length}</h2>
+                 <h2 className="text-3xl font-black text-slate-900 dark:text-white">{pendingTx.length + pendingResets.length}</h2>
               </div>
               <Clock className="text-yellow-500" size={32} />
            </div>
@@ -301,6 +368,86 @@ export const AdminPanel: React.FC = () => {
                  </div>
             </div>
         )}
+
+        {/* Security / Password Requests Section */}
+        {pendingResets.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-200 dark:border-red-900/50 shadow-xl overflow-hidden mb-8">
+                 <div className="p-4 bg-red-50 dark:bg-red-900/10 border-b border-red-200 dark:border-red-900/30 flex items-center gap-2">
+                     <ShieldAlert className="text-red-500" size={20} />
+                     <h3 className="font-bold text-red-700 dark:text-red-400">Security Requests (Forgot Password)</h3>
+                 </div>
+                 <div className="overflow-x-auto">
+                     <table className="w-full text-left">
+                         <thead className="bg-slate-50 dark:bg-slate-800 text-xs uppercase text-slate-500">
+                             <tr>
+                                 <th className="p-4">User Email</th>
+                                 <th className="p-4">Date Requested</th>
+                                 <th className="p-4 text-right">Actions</th>
+                             </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                             {pendingResets.map((req) => (
+                                 <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                     <td className="p-4 text-sm font-bold text-slate-700 dark:text-slate-300">{req.email}</td>
+                                     <td className="p-4 text-sm font-mono text-slate-500">{req.date}</td>
+                                     <td className="p-4 text-right flex justify-end gap-2">
+                                         <button 
+                                            onClick={() => handleResetAction(req.id, req.email, 'approve')}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded shadow-sm text-xs font-bold flex items-center gap-1"
+                                         >
+                                             <CheckCircle size={14} /> Reset Password
+                                         </button>
+                                         <button 
+                                            onClick={() => handleResetAction(req.id, req.email, 'reject')}
+                                            className="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1 rounded shadow-sm text-xs font-bold flex items-center gap-1"
+                                         >
+                                             <XCircle size={14} /> Reject
+                                         </button>
+                                     </td>
+                                 </tr>
+                             ))}
+                         </tbody>
+                     </table>
+                     <div className="p-4 bg-slate-50 dark:bg-slate-800 text-xs text-slate-500">
+                         <p><strong>Note:</strong> Approving a reset will set the user's password to their <strong>email address</strong>.</p>
+                     </div>
+                 </div>
+            </div>
+        )}
+
+        {/* System Configuration */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden mb-8">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                <Settings className="text-indigo-500" size={20} />
+                <h3 className="font-bold text-slate-800 dark:text-white">Receiver Bank Configuration</h3>
+            </div>
+            <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase text-slate-500">Bank Name</label>
+                        <input type="text" value={systemBank.bankName} onChange={(e) => setSystemBank({...systemBank, bankName: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-2 text-sm text-slate-900 dark:text-white" />
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase text-slate-500">Account Holder</label>
+                        <input type="text" value={systemBank.accountHolder} onChange={(e) => setSystemBank({...systemBank, accountHolder: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-2 text-sm text-slate-900 dark:text-white" />
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase text-slate-500">Account Number</label>
+                        <input type="text" value={systemBank.accountNumber} onChange={(e) => setSystemBank({...systemBank, accountNumber: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-2 text-sm text-slate-900 dark:text-white" />
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase text-slate-500">IFSC / Routing Code</label>
+                        <input type="text" value={systemBank.routingNumber} onChange={(e) => setSystemBank({...systemBank, routingNumber: e.target.value})} className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-2 text-sm text-slate-900 dark:text-white" />
+                     </div>
+                </div>
+                <div className="mt-6 flex items-center justify-between">
+                    <p className="text-green-500 text-sm font-bold">{configMessage}</p>
+                    <button onClick={handleSaveSystemBank} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                        <Save size={18} /> Update Details
+                    </button>
+                </div>
+            </div>
+        </div>
 
         {/* User Database Table */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
@@ -375,6 +522,7 @@ export const AdminPanel: React.FC = () => {
                  <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{selectedUser.profile.username}</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">{selectedUser.profile.email}</p>
+                    <p className="text-xs text-slate-400 mt-1">Password: {selectedUser.profile.password}</p>
                     
                     {/* Bank Details View */}
                     {selectedUser.profile.savedBankDetails && (
