@@ -199,7 +199,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Save Data whenever stats change (if logged in)
+  // Save Data whenever stats change (if logged in and NOT demo)
+  // We exclude Demo users here because we handle them in logout, 
+  // but keeping them in state for the session is fine.
+  // Actually, we should save demo users during the session so refresh works,
+  // but delete them on logout.
   useEffect(() => {
       if (currentUserEmail && isAuthenticated) {
           saveUserData(currentUserEmail, stats);
@@ -292,8 +296,16 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Force save before logout to ensure latest state is captured
-    if (currentUserEmail) {
+    // Determine if this is a demo user
+    if (currentUserEmail && currentUserEmail.endsWith('@neonvegas.demo')) {
+        // DELETE Demo User from DB to keep Admin panel clean
+        const db = getDB();
+        if (db[currentUserEmail]) {
+            delete db[currentUserEmail];
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(db));
+        }
+    } else if (currentUserEmail) {
+        // REGULAR User: Force save before logout
         saveUserData(currentUserEmail, stats);
     }
 
