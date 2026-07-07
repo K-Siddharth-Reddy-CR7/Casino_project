@@ -1,5 +1,6 @@
 {
   "name": "NeonVegas Casino",
   "description": "A high-stakes, visually stunning social casino simulator powered by Gemini AI. Feature Blackjack, Slots, and an interactive AI Pit Boss offering strategy and banter.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

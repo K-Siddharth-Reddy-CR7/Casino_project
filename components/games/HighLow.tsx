@@ -112,6 +112,7 @@ export const HighLow: React.FC<HighLowProps> = ({ onGameEnd, balance }) => {
           }, 1500); // Delay for visual pacing
           return () => clearTimeout(timer);
       }
+      return;
   }, [isAutoBetting, isPlaying, currentCard]);
 
   // --- Game Functions ---

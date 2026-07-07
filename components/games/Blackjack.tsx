@@ -123,6 +123,7 @@ export const Blackjack: React.FC<BlackjackProps> = ({ onGameEnd, balance }) => {
         }, 1000); // 1 second delay between moves for visual clarity
         return () => clearTimeout(timer);
     }
+    return;
   }, [isAutoBetting, gameState, playerHand]);
 
   // --- Game Functions ---
