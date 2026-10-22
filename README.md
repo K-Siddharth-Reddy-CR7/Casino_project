@@ -4,7 +4,7 @@ A full-stack online casino web application built using **Node.js, Express.js, Mo
 
 ## 🚀 Live Demo
 
-**Website:** https://neonvegas-casino-772654305198.asia-southeast1.run.app
+**Website:**    https://casino-project-eight.vercel.app/#/
 
 ## 📂 GitHub Repository
 
